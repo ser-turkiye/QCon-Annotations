@@ -92,15 +92,17 @@ public class OnCancelProcess extends UnifiedAgent {
 
             String umail = processOwner.getEMailAddress();
             List<String> mails = new ArrayList<>();
-            mails.add(umail);
 
-            JSONObject mail = new JSONObject();
-            mail.put("To", String.join(";", mails));
-            mail.put("Subject", "Cancelled Process");
-            mail.put("BodyHTMLFile", mailHtmlPath);
-            Utils.sendHTMLMail(ses, srv, "CCM_MAIL_CONFIG", mail);
-
-
+            if(umail!=null) {
+                mails.add(umail);
+                JSONObject mail = new JSONObject();
+                mail.put("To", String.join(";", mails));
+                mail.put("Subject", "Cancelled Process");
+                mail.put("BodyHTMLFile", mailHtmlPath);
+                Utils.sendHTMLMail(ses, srv, "CCM_MAIL_CONFIG", mail);
+            }else{
+                log.info("Mail adress is null :" + processOwner.getFullName());
+            }
         } catch (Exception e) {
             log.error("Exception Caught");
             log.error(e.getMessage());
