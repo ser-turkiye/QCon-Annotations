@@ -91,22 +91,25 @@ public class GenerateStamp extends UnifiedAgent {
             String completedBy = prev2Task.getFinishedBy().getName();
 
             String prjCode = this.getEventTask().getDescriptorValue("ccmPRJCard_code");
+            String isEnableStamp = this.getEventTask().getDescriptorValue("ccmPrjDocStamp");
 
             this.log.info("Consalidator Completed By: " + completedBy);
 
             //byte[] stamp = this.produceImage(220, 120, decisionCode, userName);
             //byte[] stamp = this.produceImage(220, 120, decisionCode, completedBy);
-            String ctpn = "REVIEW_STAMP_TEMPLATE";
-            IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
-            if(ctpl != null){
-                byte[] stamp = this.generateImage(220, 120, decisionCode, completedBy, prjCode);
-                stampAnnot.setImageData(stamp);
-                Point pt = new Point(100, 10);
-                stampAnnot.setStartPosition(pt);
-                IOverlayLayer ovLayer = fac.getOverlayLayerInstance(stampAnnot);
-                ovLayer.setOverlayName("Approval Stamp");
-                doc.getPartDocument(0, 0).addOverlayLayer(ovLayer);
-                doc.commit();
+            if(!Objects.equals(isEnableStamp, "false")) {
+                String ctpn = "REVIEW_STAMP_TEMPLATE";
+                IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
+                if (ctpl != null) {
+                    byte[] stamp = this.generateImage(220, 120, decisionCode, completedBy, prjCode);
+                    stampAnnot.setImageData(stamp);
+                    Point pt = new Point(100, 10);
+                    stampAnnot.setStartPosition(pt);
+                    IOverlayLayer ovLayer = fac.getOverlayLayerInstance(stampAnnot);
+                    ovLayer.setOverlayName("Approval Stamp");
+                    doc.getPartDocument(0, 0).addOverlayLayer(ovLayer);
+                    doc.commit();
+                }
             }
 
             IDocument mainDoc = (IDocument) this.getEventTask().getProcessInstance().getMainInformationObject();
