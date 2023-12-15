@@ -82,7 +82,6 @@ public class GenerateStamp extends UnifiedAgent {
             Long prevTaskID = this.getEventTask().getPreviousTaskNumericID();
             ITask prevTask = this.getEventTask().getProcessInstance().findTaskByNumericID(this.getEventTask().getPreviousTaskNumericID());
 
-
             Long prev2TaskID = prevTask.getPreviousTaskNumericID();
             ITask prev2Task = this.getEventTask().getProcessInstance().findTaskByNumericID(prev2TaskID);
 
@@ -97,7 +96,7 @@ public class GenerateStamp extends UnifiedAgent {
 
             //byte[] stamp = this.produceImage(220, 120, decisionCode, userName);
             //byte[] stamp = this.produceImage(220, 120, decisionCode, completedBy);
-            if(!Objects.equals(isEnableStamp, "false")) {
+            if(!Objects.equals(isEnableStamp, "false") && isEnableStamp!=null) {
                 String ctpn = "REVIEW_STAMP_TEMPLATE";
                 IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
                 if (ctpl != null) {
