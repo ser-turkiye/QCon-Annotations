@@ -72,7 +72,6 @@ public class OnCancelProcess extends UnifiedAgent {
             processInstance.setDescriptorValue("ccmCrrsStatus","Cancelled");
             processInstance.commit();
 
-
             String mtpn = "PROCESS_CANCEL_MAIL";
             JSONObject dbks = new JSONObject();
             dbks.put("DoxisLink", Conf.CancelProcess.WebBase + helper.getTaskURL(processInstance.getID()));
@@ -81,27 +80,28 @@ public class OnCancelProcess extends UnifiedAgent {
 
             IDocument mtpl = Utils.getTemplateDocument(prjn, mtpn, helper);
             if(mtpl == null){
-                throw new Exception("Template-Document [ " + mtpn + " ] not found.");
-            }
+                log.info("Template-Document [ " + mtpn + " ] not found.");
+                //throw new Exception("Template-Document [ " + mtpn + " ] not found.");
+            }else {
+                String tplMailPath = Utils.exportDocument(mtpl, Conf.CancelProcess.MainPath, mtpn + "[" + uniqueId + "]");
+                String mailExcelPath = Utils.saveDocReviewExcel(tplMailPath, Conf.CancelProcessSheetIndex.Mail,
+                        Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].xlsx", dbks
+                );
+                String mailHtmlPath = Utils.convertExcelToHtml(mailExcelPath, Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].html");
 
-            String tplMailPath = Utils.exportDocument(mtpl, Conf.CancelProcess.MainPath, mtpn + "[" + uniqueId + "]");
-            String mailExcelPath = Utils.saveDocReviewExcel(tplMailPath, Conf.CancelProcessSheetIndex.Mail,
-                    Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].xlsx", dbks
-            );
-            String mailHtmlPath = Utils.convertExcelToHtml(mailExcelPath, Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].html");
+                String umail = processOwner.getEMailAddress();
+                List<String> mails = new ArrayList<>();
 
-            String umail = processOwner.getEMailAddress();
-            List<String> mails = new ArrayList<>();
-
-            if(umail!=null) {
-                mails.add(umail);
-                JSONObject mail = new JSONObject();
-                mail.put("To", String.join(";", mails));
-                mail.put("Subject", "Cancelled Process");
-                mail.put("BodyHTMLFile", mailHtmlPath);
-                Utils.sendHTMLMail(ses, srv, "CCM_MAIL_CONFIG", mail);
-            }else{
-                log.info("Mail adress is null :" + processOwner.getFullName());
+                if (umail != null) {
+                    mails.add(umail);
+                    JSONObject mail = new JSONObject();
+                    mail.put("To", String.join(";", mails));
+                    mail.put("Subject", "Cancelled Process");
+                    mail.put("BodyHTMLFile", mailHtmlPath);
+                    Utils.sendHTMLMail(ses, srv, "CCM_MAIL_CONFIG", mail);
+                } else {
+                    log.info("Mail adress is null :" + processOwner.getFullName());
+                }
             }
         } catch (Exception e) {
             log.error("Exception Caught");

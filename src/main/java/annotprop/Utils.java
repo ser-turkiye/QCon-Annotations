@@ -129,7 +129,7 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    public  static void sendHTMLMail(ISession ses, IDocumentServer srv, String mtpn, JSONObject pars) throws Exception {
+    public static void sendHTMLMail(ISession ses, IDocumentServer srv, String mtpn, JSONObject pars) throws Exception {
         JSONObject mcfg = Utils.getMailConfig(ses, srv, mtpn);
 
         String host = mcfg.getString("host");
@@ -196,39 +196,45 @@ public class Utils {
                 }
             };
         }
-        Session session = (authenticator == null ? Session.getDefaultInstance(props) : Session.getDefaultInstance(props, authenticator));
 
-        MimeMessage message = new MimeMessage(session);
-        message.setFrom(new InternetAddress(sender.replace(";", ",")));
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mailTo.replace(";", ",")));
-        message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(mailCC.replace(";", ",")));
-        message.setSubject(subject);
+        if(!Objects.equals(mailTo, "")) {
+            Session session = (authenticator == null ? Session.getDefaultInstance(props) : Session.getDefaultInstance(props, authenticator));
 
-        Multipart multipart = new MimeMultipart("mixed");
+            MimeMessage message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(sender.replace(";", ",")));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mailTo.replace(";", ",")));
+            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(mailCC.replace(";", ",")));
+            message.setSubject(subject);
 
-        BodyPart htmlBodyPart = new MimeBodyPart();
-        htmlBodyPart.setContent(getFileContent(pars.getString("BodyHTMLFile")) , "text/html"); //5
-        multipart.addBodyPart(htmlBodyPart);
+            Multipart multipart = new MimeMultipart("mixed");
 
-        String[] atchs = attachments.split("\\;");
-        for (String atch : atchs){
-            if(atch.isEmpty()){continue;}
-            BodyPart attachmentBodyPart = new MimeBodyPart();
-            attachmentBodyPart.setDataHandler(new DataHandler((DataSource) new FileDataSource(atch)));
+            BodyPart htmlBodyPart = new MimeBodyPart();
+            htmlBodyPart.setContent(getFileContent(pars.getString("BodyHTMLFile")), "text/html"); //5
+            multipart.addBodyPart(htmlBodyPart);
 
-            String fnam = Paths.get(atch).getFileName().toString();
-            if(pars.has("AttachmentName." + fnam)){
-                fnam = pars.getString("AttachmentName." + fnam);
+            String[] atchs = attachments.split("\\;");
+            for (String atch : atchs) {
+                if (atch.isEmpty()) {
+                    continue;
+                }
+                BodyPart attachmentBodyPart = new MimeBodyPart();
+                attachmentBodyPart.setDataHandler(new DataHandler((DataSource) new FileDataSource(atch)));
+
+                String fnam = Paths.get(atch).getFileName().toString();
+                if (pars.has("AttachmentName." + fnam)) {
+                    fnam = pars.getString("AttachmentName." + fnam);
+                }
+
+                attachmentBodyPart.setFileName(fnam);
+                multipart.addBodyPart(attachmentBodyPart);
+
             }
 
-            attachmentBodyPart.setFileName(fnam);
-            multipart.addBodyPart(attachmentBodyPart);
+            message.setContent(multipart);
+            Transport.send(message);
+        }else {
 
         }
-
-        message.setContent(multipart);
-        Transport.send(message);
-
     }
     static IStringMatrix getMailConfigMatrix(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
         //IStringMatrix rtrn = srv.getStringMatrix("MailConfig" + (!mtpn.isEmpty() ? "." + mtpn : ""), ses);
