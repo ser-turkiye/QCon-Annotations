@@ -88,6 +88,7 @@ public class Conf {
         public static final String BPM = "BPM";
         public static final String Company = "D_QCON";
         public static final String ProjectWorkspace = "PRJ_FOLDER";
+        public static final String EngineeringDocument = "PRJ_DOC";
 
     }
     public static class Bookmarks{
