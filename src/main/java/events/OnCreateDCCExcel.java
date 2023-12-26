@@ -28,7 +28,7 @@ public class OnCreateDCCExcel extends UnifiedAgent {
             mainDocument = getEventDocument();
 
             if(Objects.equals(mainDocument.getClassID(), Conf.ClassIDs.DCCExcelSheet)) {
-                this.addToDCCNode("DCC", "Import Metadata From Excel", mainDocument);
+                this.addToDCCNode("Workspace", "Import Metadata From Excel", mainDocument);
             }
 
             log.info("----OnChangeProjectDoc Agent Started ---for IDocument ID:--" + mainDocument.getID());
@@ -49,6 +49,9 @@ public class OnCreateDCCExcel extends UnifiedAgent {
             throw new Exception("Project folder not found.");
         }
         List<INode> nodesByName = prjFolder.getNodesByName(rootName);
+        if(nodesByName.isEmpty()){
+            throw new Exception(rootName + " Node not found.");
+        }
         INode iNode = nodesByName.get(0);
         INodes root = (INodes) iNode.getChildNodes();
         INode newNode = root.getItemByName(nodeName);
@@ -118,7 +121,6 @@ public class OnCreateDCCExcel extends UnifiedAgent {
 
         return dlg;
     }
-
     public IQueryParameter query(ISession session, IQueryDlg queryDlg, Map<String, String> descriptorValues) {
         IDocumentServer documentServer = session.getDocumentServer();
         ISerClassFactory classFactory = documentServer.getClassFactory();
