@@ -29,20 +29,25 @@ public class OnNewBulkReview extends UnifiedAgent {
                 log.error("Task is locked.." + getEventTask().getID() + "..restarting agent");
                 return resultRestart("Restarting Agent");
             }
+            IDocumentServer srv = getEventTask().getSession().getDocumentServer();
             IInformationObjectLinks links = getEventTask().getProcessInstance().getLoadedInformationObjectLinks();
             for (ILink link : links.getLinks()) {
                 IInformationObject xdoc = link.getTargetInformationObject();
                 if (!xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
-                if (xdoc.getDescriptorValue("ccmPrjDocCategory").trim().equalsIgnoreCase("TRANSMITTAL")){continue;}
                 String disp = xdoc.getDisplayName();
                 String dpjn = xdoc.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+                String category = xdoc.getDescriptorValue("ccmPrjDocCategory");
+                if (category != null && category.trim().equalsIgnoreCase("TRANSMITTAL")){continue;}
                 this.createNewMainProcess((IDocument) xdoc);
             }
+
         } catch (Exception e) {
             log.error("Exception Caught");
             log.error(e.getMessage());
             return resultError(e.getMessage());
         }
+        //getEventTask().getProcessInstance().setSubject("Multi Document Send to Review");
+        getEventTask().getProcessInstance().delete();
         return resultSuccess("Agent Finished Succesfully");
     }
     private void createNewMainProcess(IDocument mainDocument) throws Exception {
@@ -54,8 +59,8 @@ public class OnNewBulkReview extends UnifiedAgent {
                 helper.mapDescriptorsFromObjectToObject(getEventTask(), pi, true);
                 //pi.setSubject("Review for " + mainDocument.getDescriptorValue("ccmPrjDocNumber") + " " + mainDocument.getDescriptorValue("ccmPrjDocRevision"));
                 log.info("Getting Task Document Copy");
-                IDocument documentCopy = createNewDocumentCopy(mainDocument);
-                pi.setMainInformationObjectID(documentCopy.getID());
+                //IDocument documentCopy = createNewDocumentCopy(mainDocument);
+                pi.setMainInformationObjectID(mainDocument.getID());
                 log.info("Attempting Commit");
                 pi.commit();
             }

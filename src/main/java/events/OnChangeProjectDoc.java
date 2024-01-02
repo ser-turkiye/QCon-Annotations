@@ -56,8 +56,12 @@ public class OnChangeProjectDoc extends UnifiedAgent {
                     mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocDueDate"));
 
                     mainDocument.setDescriptorValueTyped("ccmPrjDocDate", (new java.util.Date()));
-
-                    mainDocument.commit();
+                    try {
+                        mainDocument.commit();
+                    } catch (Exception e){
+                        log.info("Exception Caught.. commit error:" + e);
+                        resultRestart("OnChangeProjectDoc error. Restarting agent...");
+                    }
 
                     IFolder prjFolder = this.getProjectFolder();
                     if (prjFolder != null) {

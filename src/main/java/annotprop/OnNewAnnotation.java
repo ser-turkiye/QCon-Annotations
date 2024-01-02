@@ -169,15 +169,18 @@ public class OnNewAnnotation extends UnifiedAgent {
                 copyLayers(sourceDoc, targetDoc);
             } else {
                 log.info("sourcedoc layer check targetdoc layers for:" + targetDoc.getID());
-                IOverlayLayer targetOverLayLayer = targetDoc.getPartDocument(0, 0).getOverlayLayer(0);
-                for (int i = 0; i < sourceOverLays.size(); i++) {
-                    isSame = false;
-                    for (int k = 0; k < targetOverLays.size(); k++) {
-                        if (isSameOverLay(sourceOverLays.get(i), targetOverLays.get(k))) isSame = true;
-                    }
+                int targetOverLayLayerCount = targetDoc.getPartDocument(0, 0).getOverlayLayerCount();
+                if(targetOverLayLayerCount > 0) {
+                    IOverlayLayer targetOverLayLayer = targetDoc.getPartDocument(0, 0).getOverlayLayer(0);
+                    for (int i = 0; i < sourceOverLays.size(); i++) {
+                        isSame = false;
+                        for (int k = 0; k < targetOverLays.size(); k++) {
+                            if (isSameOverLay(sourceOverLays.get(i), targetOverLays.get(k))) isSame = true;
+                        }
 
-                    if (!isSame) {
-                        targetOverLayLayer.addOverlay(sourceOverLays.get(i));
+                        if (!isSame) {
+                            targetOverLayLayer.addOverlay(sourceOverLays.get(i));
+                        }
                     }
                 }
             }
