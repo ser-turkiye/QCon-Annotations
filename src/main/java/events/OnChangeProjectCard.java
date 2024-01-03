@@ -31,12 +31,6 @@ public class OnChangeProjectCard extends UnifiedAgent {
             updatePrjCardMembers2GVList("CCM_PARAM_PROJECT-MEMBERS", mainDocument.getDescriptorValue("ccmPRJCard_code"), mainDocument);
             log.info("----OnChangeProjectCard Updated Project Members GVList ---for (ID):" + mainDocument.getID());
 
-            updateUnitsByPrjCard(mainDocument.getDescriptorValue("ccmPRJCard_code"),getPrjMembersFromPrjCard(mainDocument));
-            log.info("----OnChangeProjectCard updated Units ---for IDocument ID:--" + mainDocument.getID());
-
-            updateRolesFromGVList(mainDocument);
-            log.info("----OnChangeProjectCard Updated Roles from ProjectCard ---for (ID):" + mainDocument.getID());
-
         } catch (Exception e) {
             log.error("Exception Caught");
             log.error(e.getMessage());
@@ -466,10 +460,10 @@ public class OnChangeProjectCard extends UnifiedAgent {
             }
             IUser cuser = user.getModifiableCopy(getSes());
             String[] newUnitIDs = rtrn.toArray(new String[0]);
-            cuser.setRoleIDs(newUnitIDs);
+            cuser.setUnitIDs(newUnitIDs);
             cuser.commit();
         }catch (Exception e){
-            throw new Exception("Exeption Caught..removeFromRole : " + e);
+            throw new Exception("Exeption Caught..removeFromUnit : " + e);
         }
     }
     public String[] removeUnitFromList(IUser user, String unitID){

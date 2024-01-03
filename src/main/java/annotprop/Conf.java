@@ -58,7 +58,8 @@ public class Conf {
         public static final String EngineeringDocument = "3b3078f8-c0d0-4830-b963-88bebe1c1462";
         public static final String DCCExcelSheet = "3009009e-e563-400e-8fdb-e0382ca0b011";
         public static final String ReviewSubProcess = "629a28c4-6c36-44d0-90f7-1e5802f038e8";
-        public static final String MainReviewProcess= "69d42aaf-6978-4b5a-8178-88a78f4b3158";
+        public static final String MainReviewProcess = "69d42aaf-6978-4b5a-8178-88a78f4b3158";
+        public static final String BulkReviewProcess = "1dc85f54-f737-4867-b538-71c6277da8f0";
         public static final String EngineeringCopy = "8cebcfcc-7497-4bc1-b69e-643fc03b636f";
         public static final String EngineeringCopyFiling = "4ef45f5c-e318-459c-afb4-b2d46d4b6556";
         public static final String EngineeringAttachments = "3e1fe7b3-3e86-4910-8155-c29b662e71d6";
@@ -88,6 +89,7 @@ public class Conf {
         public static final String BPM = "BPM";
         public static final String Company = "D_QCON";
         public static final String ProjectWorkspace = "PRJ_FOLDER";
+        public static final String EngineeringDocument = "PRJ_DOC";
 
     }
     public static class Bookmarks{

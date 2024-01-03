@@ -38,7 +38,7 @@ public class OnChangeProjectDoc extends UnifiedAgent {
 
                 Object chkDoc = checkDublicateEngDocByFileName(mainDocument);
                 if (chkDoc != null) {
-                    mainDocument.setDescriptorValue("ccmPrjDocFileName", mainDocument.getDescriptorValue("ccmPrjDocFileName") + "(DUBLICATE)");
+                    mainDocument.setDescriptorValue("ccmPrjDocFileName", "_DUBLICATED_" + mainDocument.getDescriptorValue("ccmPrjDocFileName"));
                 }
 
                 if (getEventName() != null && getEventName().equals("createDocument")) {
@@ -56,27 +56,19 @@ public class OnChangeProjectDoc extends UnifiedAgent {
                     mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocDueDate"));
 
                     mainDocument.setDescriptorValueTyped("ccmPrjDocDate", (new java.util.Date()));
-
-                    mainDocument.commit();
-
-                    //this.removeReleaseOldEngDoc(mainDocument);
-
-                    //this.addToDCCNode("DCC", "Eng.Docs.Import", mainDocument);
-
-                }
-
-                this.removeReleaseOldEngDoc(mainDocument);
-
-                /*String taskStatus = mainDocument.getDescriptorValue("ccmPrjDocWFTaskName");
-                log.info("----OnChangeProjectDoc Task status : " + taskStatus + " ---for IDocument ID:--" + mainDocument.getID());
-                if(Objects.equals(taskStatus, "Completed")){
-                    log.info("----OnChangeProjectDoc mutability : " + mainDocument.getMutability() + " ---for IDocument ID:--" + mainDocument.getID());
-                    if(mainDocument.getMutability() != IMutability.IMMUTABLE) {
+                    try {
                         mainDocument.commit();
-                        srv.updateMutability(getSes(), mainDocument, IMutability.IMMUTABLE);
-                        log.info("----OnChangeProjectDoc mutability final : " + mainDocument.getMutability() + " ---for IDocument ID:--" + mainDocument.getID());
+                    } catch (Exception e){
+                        log.info("Exception Caught.. commit error:" + e);
+                        resultRestart("OnChangeProjectDoc error. Restarting agent...");
                     }
-                }*/
+
+                    IFolder prjFolder = this.getProjectFolder();
+                    if (prjFolder != null) {
+                        this.addToRootNode(prjFolder, "Workspace", "Import Document", mainDocument);
+                    }
+                    //this.removeReleaseOldEngDoc(mainDocument);
+                }
             }
 
             log.info("----OnChangeProjectDoc Agent Finished ---for IDocument ID:--" + mainDocument.getID());
@@ -88,14 +80,66 @@ public class OnChangeProjectDoc extends UnifiedAgent {
         }
         return resultSuccess("Agent Finished Succesfully");
     }
-    private boolean addToDCCNode(String rootName, String nodeName, IDocument pdoc) throws Exception {
-        log.info("Add2RootNode Start");
-        boolean add2Node = false;
+    public IDocument checkDublicateEngDocByFileName(IDocument doc1){
+        IDocument result = null;
+        ISession session = this.getSes();
+        String searchClassName = "Search Engineering Documents";
+        IDocumentServer documentServer = session.getDocumentServer();
+        IDescriptor descriptor1 = documentServer.getDescriptorForName(session, "ccmPRJCard_code");
+        IDescriptor descriptor2 = documentServer.getDescriptorForName(session, "ccmPrjDocFileName");
+        IQueryClass queryClass = documentServer.getQueryClassByName(session, searchClassName);
+        IQueryDlg queryDlg = this.findQueryDlgForQueryClass(queryClass);
+        Map<String, String> searchDescriptors = new HashMap();
+        searchDescriptors.put(descriptor1.getId(), doc1.getDescriptorValue("ccmPRJCard_code"));
+        searchDescriptors.put(descriptor2.getId(), doc1.getDescriptorValue("ccmPrjDocFileName"));
+        IQueryParameter queryParameter = this.query(session, queryDlg, searchDescriptors);
+        if (queryParameter != null) {
+            IDocumentHitList hitresult = this.executeQuery(session, queryParameter);
+            IDocument[] hits = hitresult.getDocumentObjects();
+            queryParameter.close();
+            for(IDocument ldoc : hits){
+                String docID = doc1.getID();
+                String chkID = ldoc.getID();
+                if(!Objects.equals(docID, chkID)){
+                    result = ldoc;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+    public INode getNodesByList(List<String> fNames) throws Exception {
         IFolder prjFolder = getProjectFolder();
         if(prjFolder == null){
             throw new Exception("Project folder not found.");
         }
-        List<INode> nodesByName = prjFolder.getNodesByName(rootName);
+        INode prjDocNode = prjFolder.getNodeByID(Constants.ClassIDs.ProjectDocFolder);
+        if(prjDocNode == null){
+            throw new Exception("Project Docs. folder not found.");
+        }
+        boolean isFirstNode = true;
+        INode newNode = null;
+        INodes childs = null;
+        for(String fname : fNames) {
+            if(isFirstNode) {
+                childs = (INodes) prjDocNode.getChildNodes();
+                isFirstNode = false;
+            }else{
+                if(newNode != null) {
+                    childs = (INodes) newNode.getChildNodes();
+                }
+            }
+            if(childs != null){
+                newNode = childs.getItemByName(fname);
+            }
+        }
+        log.info("Add NewNode Final ?? : " + newNode);
+        return newNode;
+    }
+    private boolean addToRootNode(IFolder folder, String rootName, String nodeName, IDocument pdoc) throws Exception {
+        log.info("Add2RootNode Start");
+        boolean add2Node = false;
+        List<INode> nodesByName = folder.getNodesByName(rootName);
         INode iNode = nodesByName.get(0);
         INodes root = (INodes) iNode.getChildNodes();
         INode newNode = root.getItemByName(nodeName);
@@ -115,13 +159,81 @@ public class OnChangeProjectDoc extends UnifiedAgent {
             }
             log.info("Finish ProjectDoc exit in folder: " + isExistElement);
             if(!isExistElement) {
-                add2Node = prjFolder.addInformationObjectToNode(pdoc.getID(), newNode.getID());
+                add2Node = folder.addInformationObjectToNode(pdoc.getID(), newNode.getID());
                 log.info("ProjectDoc add to root folder: " + newNode.getID());
-                prjFolder.commit();
+                folder.commit();
             }
         }
         log.info("ProjectDoc add to root node result : " + add2Node);
         return add2Node;
+    }
+    private boolean addToNode(INode newNode, IDocument pdoc) throws Exception {
+        log.info("Add2Node Start");
+        boolean add2Node = false;
+        IFolder prjFolder = getProjectFolder();
+        if(prjFolder == null){
+            throw new Exception("Project folder not found.");
+        }
+        prjFolder.refresh(true);
+
+        if(newNode != null) {
+            newNode.refresh(true);
+            boolean isExistElement = false;
+            log.info("Start ProjectDoc exit in folder: " + isExistElement);
+            IElements nelements = newNode.getElements();
+            for(int i=0;i<nelements.getCount2();i++) {
+                IElement nelement = nelements.getItem2(i);
+                String edocID = nelement.getLink();
+                String pdocID = pdoc.getID();
+                if(Objects.equals(pdocID, edocID)){
+                    isExistElement = true;
+                    break;
+                }
+            }
+            log.info("Finish ProjectDoc exit in folder: " + isExistElement);
+            if(!isExistElement) {
+                INodes root = (INodes)newNode.getChildNodes();
+                String oldNodeID = pdoc.getDescriptorValue("ccmLinkedFolderID");
+                if (oldNodeID != newNode.getID()) {
+                    INode oldNode = root.getItemByID(oldNodeID);
+                    if (oldNode != null) {
+                        IElements elements = oldNode.getElements();
+                        while(elements.getCount2() > 0) {
+                            elements.remove(0);
+                        }
+                        prjFolder.commit();
+                    }
+                }
+
+                add2Node = prjFolder.addInformationObjectToNode(pdoc.getID(), newNode.getID());
+                log.info("ProjectDoc add to folder: " + newNode.getID());
+                if (add2Node) {
+                    pdoc.setDescriptorValue("ccmLinkedFolderID", newNode.getID());
+                    pdoc.commit();
+                    log.info("ProjectDoc setting new node ID: " + newNode.getID());
+                }
+                prjFolder.commit();
+            }
+        }
+        return add2Node;
+    }
+    private void removeFromNode(IFolder folder, String rootName, String nodeName, IDocument pdoc) throws Exception {
+        log.info("Remove from Node Start");
+        boolean add2Node = false;
+        String oldNodeID = pdoc.getDescriptorValue("ccmLinkedFolderID");
+        List<INode> nodesByName = folder.getNodesByName(rootName);
+        INode iNode = nodesByName.get(0);
+        INodes root = (INodes) iNode.getChildNodes();
+        //INode newNode = root.getItemByName(nodeName);
+        INode newNode = root.getItemByID(oldNodeID);
+        if(newNode != null) {
+            IElements elements = newNode.getElements();
+            while(elements.getCount2() > 0) {
+                IElement element = elements.getItem2(0);
+                elements.remove(0);
+            }
+            folder.commit();
+        }
     }
     private IFolder getProjectFolder() throws Exception {
         log.info("Getting Project Folder");
@@ -165,7 +277,6 @@ public class OnChangeProjectDoc extends UnifiedAgent {
 
         return dlg;
     }
-
     public IQueryParameter query(ISession session, IQueryDlg queryDlg, Map<String, String> descriptorValues) {
         IDocumentServer documentServer = session.getDocumentServer();
         ISerClassFactory classFactory = documentServer.getClassFactory();
@@ -201,70 +312,5 @@ public class OnChangeProjectDoc extends UnifiedAgent {
     public IDocumentHitList executeQuery(ISession session, IQueryParameter queryParameter) {
         IDocumentServer documentServer = session.getDocumentServer();
         return documentServer.query(queryParameter, session);
-    }
-    public IDocument checkDublicateEngDocByFileName(IDocument doc1){
-        IDocument result = null;
-        ISession session = this.getSes();
-        String searchClassName = "Search Engineering Documents";
-        IDocumentServer documentServer = session.getDocumentServer();
-        IDescriptor descriptor1 = documentServer.getDescriptorForName(session, "ccmPRJCard_code");
-        IDescriptor descriptor2 = documentServer.getDescriptorForName(session, "ccmPrjDocFileName");
-        IQueryClass queryClass = documentServer.getQueryClassByName(session, searchClassName);
-        IQueryDlg queryDlg = this.findQueryDlgForQueryClass(queryClass);
-        Map<String, String> searchDescriptors = new HashMap();
-        searchDescriptors.put(descriptor1.getId(), doc1.getDescriptorValue("ccmPRJCard_code"));
-        searchDescriptors.put(descriptor2.getId(), doc1.getDescriptorValue("ccmPrjDocFileName"));
-        IQueryParameter queryParameter = this.query(session, queryDlg, searchDescriptors);
-        if (queryParameter != null) {
-            IDocumentHitList hitresult = this.executeQuery(session, queryParameter);
-            IDocument[] hits = hitresult.getDocumentObjects();
-            queryParameter.close();
-            for(IDocument ldoc : hits){
-                String docID = doc1.getID();
-                String chkID = ldoc.getID();
-                if(!Objects.equals(docID, chkID)){
-                    result = ldoc;
-                    break;
-                }
-            }
-        }
-        return result;
-    }
-    public void removeReleaseOldEngDoc(IDocument doc1){
-        IDocument result = null;
-        ISession session = this.getSes();
-        String searchClassName = "Search Engineering Documents";
-        IDocumentServer documentServer = session.getDocumentServer();
-        IDescriptor descriptor1 = documentServer.getDescriptorForName(session, "ccmPrjDocNumber");
-        IDescriptor descriptor2 = documentServer.getDescriptorForName(session, "ccmPRJCard_code");
-        //IDescriptor descriptor2 = documentServer.getDescriptorForName(session, "ccmPrjDocRevision");
-        IDescriptor descriptor3 = documentServer.getDescriptorForName(session, "ccmReleased");
-        IQueryClass queryClass = documentServer.getQueryClassByName(session, searchClassName);
-        IQueryDlg queryDlg = this.findQueryDlgForQueryClass(queryClass);
-        Map<String, String> searchDescriptors = new HashMap();
-        searchDescriptors.put(descriptor1.getId(), doc1.getDescriptorValue("ccmPrjDocNumber"));
-        searchDescriptors.put(descriptor2.getId(), doc1.getDescriptorValue("ccmPRJCard_code"));
-        searchDescriptors.put(descriptor3.getId(), "1");
-        if(doc1.getDescriptorValue("ccmPrjDocNumber") != null) {
-            IQueryParameter queryParameter = this.query(session, queryDlg, searchDescriptors);
-            if (queryParameter != null) {
-                IDocumentHitList hitresult = this.executeQuery(session, queryParameter);
-                IDocument[] hits = hitresult.getDocumentObjects();
-                queryParameter.close();
-                for (IDocument ldoc : hits) {
-                    String docID = doc1.getID();
-                    String chkID = ldoc.getID();
-                    if(!Objects.equals(docID, chkID)){
-//                    if(ldoc.getMutability() == IMutability.FIXED_CONTENT) {
-//                        getSes().getDocumentServer().updateMutability(getSes(), ldoc, IMutability.MUTABLE);
-//                        ldoc.commit();
-//                    }
-                        ldoc.setDescriptorValue("ccmReleased","0");
-                        ldoc.commit();
-                        //getSes().getDocumentServer().updateMutability(getSes(), ldoc, IMutability.FIXED_CONTENT);
-                    }
-                }
-            }
-        }
     }
 }

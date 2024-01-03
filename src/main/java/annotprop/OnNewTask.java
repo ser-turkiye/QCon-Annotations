@@ -53,74 +53,87 @@ public class OnNewTask extends UnifiedAgent {
             List<String> reviewers = getEventTask().getDescriptorValues(Conf.Descriptors.Recievers, String.class);
             if (reviewers == null) return resultError("No Receivers found");
             if (reviewers.size() < 1) return resultError("No Receivers found");
-            this.startNewTasks(reviewers);
-
+            try {
+                this.startNewTasks(reviewers);
+            }catch (Exception e){
+                log.error("Restarting OnNewTask agent");
+                return resultRestart("Restarting OnNewTask Agent");
+            }
         } catch (Exception e) {
             log.error("Exception Caught");
             log.error(e.getMessage());
             return resultError(e.getMessage());
         }
-
         return resultSuccess("Agent Finished Succesfully");
     }
 
 
-    private IDocument createNewDocumentCopy(String layerName){
+    private IDocument createNewDocumentCopy(String layerName) throws Exception {
         log.info("Copying Original Document for each WB");
-        IArchiveClass ac = getDocumentServer().getArchiveClass(Conf.ClassIDs.EngineeringCopy , getSes());
-        IDatabase db = getSes().getDatabase(ac.getDefaultDatabaseID());
+        IDocument copyDoc = null;
+        try {
+            IArchiveClass ac = getDocumentServer().getArchiveClass(Conf.ClassIDs.EngineeringCopy , getSes());
+            IDatabase db = getSes().getDatabase(ac.getDefaultDatabaseID());
 
-//      getDocumentServer().getClassFactory().getDocumentInstance(db.getDatabaseName() , ac.getID() , "0000" , getSes()).commit();
-        IDocument copyDoc = getDocumentServer().getClassFactory().getDocumentInstance(db.getDatabaseName() , ac.getID() , "0000" , getSes());
-        helper.mapDescriptorsFromObjectToObject(mainDocument , copyDoc , true);
-        copyDoc.commit();
-        getDocumentServer().copyDocument2(getSes() , mainDocument , copyDoc,
-               CopyScope.COPY_PART_DOCUMENTS , CopyScope.COPY_OVERLAYS );
+    //      getDocumentServer().getClassFactory().getDocumentInstance(db.getDatabaseName() , ac.getID() , "0000" , getSes()).commit();
+            copyDoc = getDocumentServer().getClassFactory().getDocumentInstance(db.getDatabaseName() , ac.getID() , "0000" , getSes());
+            helper.mapDescriptorsFromObjectToObject(mainDocument , copyDoc , true);
+            copyDoc.commit();
+            getDocumentServer().copyDocument2(getSes() , mainDocument , copyDoc,
+                   CopyScope.COPY_PART_DOCUMENTS , CopyScope.COPY_OVERLAYS );
 
-        copyDoc.setDescriptorValue(Conf.Descriptors.MainDocumentID , mainDocument.getID());
-        copyDoc.setDescriptorValue(Conf.Descriptors.SubDocumentID , copyDoc.getID());
-        copyDoc.setDescriptorValue(Conf.Descriptors.LayerName, layerName);
+            copyDoc.setDescriptorValue(Conf.Descriptors.MainDocumentID , mainDocument.getID());
+            copyDoc.setDescriptorValue(Conf.Descriptors.SubDocumentID , copyDoc.getID());
+            copyDoc.setDescriptorValue(Conf.Descriptors.LayerName, layerName);
 
-        copyDoc.commit();
+            copyDoc.commit();
+        } catch (Exception e) {
+            log.info("Exeption Caught..createNewDocumentCopy: " + e);
+        }
         return copyDoc;
     }
     private void createNewTaskForWB(String wbID, String layerName) throws Exception {
         log.info("Creating New Task for WB");
-        mainDocument = getMainDocument();
-        IProcessInstance pi = helper.buildNewProcessInstanceForID(Conf.ClassIDs.ReviewSubProcess);
-        if (pi == null) throw new Exception("Process Instance couldn't be created");
-        log.info("Mapping Descritpors to new Task");
-        helper.mapDescriptorsFromObjectToObject(getEventTask(), pi, true);
-        pi.setDescriptorValue(Conf.Descriptors.LayerName, layerName);
-        pi.setDescriptorValue(Conf.Descriptors.ReviewerWBID, wbID);
-        pi.setDescriptorValue(Conf.Descriptors.MainTaskID , getEventTask().getProcessInstance().getID());
-        pi.setSubject("Review for " + mainDocument.getDescriptorValue("ccmPrjDocNumber") + " " + mainDocument.getDescriptorValue("ccmPrjDocRevision"));
-        log.info("Getting Task Document Copy");
-        IDocument documentCopy = createNewDocumentCopy(layerName);
-        pi.setMainInformationObjectID(documentCopy.getID());
-        log.info("Attempting Commit");
-        pi.commit();
-
+        try {
+            mainDocument = getMainDocument();
+            IProcessInstance pi = helper.buildNewProcessInstanceForID(Conf.ClassIDs.ReviewSubProcess);
+            if (pi == null) throw new Exception("Process Instance couldn't be created");
+            log.info("Mapping Descritpors to new Task");
+            helper.mapDescriptorsFromObjectToObject(getEventTask(), pi, true);
+            pi.setDescriptorValue(Conf.Descriptors.LayerName, layerName);
+            pi.setDescriptorValue(Conf.Descriptors.ReviewerWBID, wbID);
+            pi.setDescriptorValue(Conf.Descriptors.MainTaskID , getEventTask().getProcessInstance().getID());
+            pi.setSubject("Review for " + mainDocument.getDescriptorValue("ccmPrjDocNumber") + " " + mainDocument.getDescriptorValue("ccmPrjDocRevision"));
+            log.info("Getting Task Document Copy");
+            IDocument documentCopy = createNewDocumentCopy(layerName);
+            pi.setMainInformationObjectID(documentCopy.getID());
+            log.info("Attempting Commit");
+            pi.commit();
+        } catch (Exception e) {
+            log.info("Exeption Caught..createNewTaskForWB: " + e);
+        }
      }
 
     private void startNewTasks(List<String> reviewers) throws Exception {
         log.info("Starting new task for each reviewer");
-
-        List<String> wbList = new ArrayList<>();
-        HashMap<String, Boolean> createdLayerNames = new HashMap<>();
-        for (String reviewer : reviewers) {
-            IWorkbasket wb = getBpm().getWorkbasket(reviewer);
-            if (wb == null) throw new Exception("Reviwer with WBID: " + reviewer + "'s workbasket not found");
-            String layerName = wb.getFullName();
-            wbList.add(layerName);
-            if (createdLayerNames.containsKey(layerName)) {
-                layerName = reviewer;
+        try {
+            List<String> wbList = new ArrayList<>();
+            HashMap<String, Boolean> createdLayerNames = new HashMap<>();
+            for (String reviewer : reviewers) {
+                IWorkbasket wb = getBpm().getWorkbasket(reviewer);
+                if (wb == null) throw new Exception("Reviwer with WBID: " + reviewer + "'s workbasket not found");
+                String layerName = wb.getFullName();
+                wbList.add(layerName);
+                if (createdLayerNames.containsKey(layerName)) {
+                    layerName = reviewer;
+                }
+                createdLayerNames.put(layerName, true);
+                log.info("Found Reviewer: " + wb.getFullName() +" sending task to reviwer");
+                this.createNewTaskForWB(reviewer, layerName);
             }
-            createdLayerNames.put(layerName, true);
-            log.info("Found Reviewer: " + wb.getFullName() +" sending task to reviwer");
-            this.createNewTaskForWB(reviewer, layerName);
+        } catch (Exception e) {
+            log.info("Exeption Caught..startNewTasks: " + e);
         }
-
     }
 
     private void setDocumentIDOnTask() throws Exception {
