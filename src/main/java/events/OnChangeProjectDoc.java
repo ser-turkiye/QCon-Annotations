@@ -34,7 +34,7 @@ public class OnChangeProjectDoc extends UnifiedAgent {
                 return resultSuccess("Agent Finished Project Doc is null");
             }
 
-            if(!Objects.equals(mainDocument.getDescriptorValue("ccmPrjDocCategory"), "Transmittal")) {
+            if(!Objects.equals(mainDocument.getDescriptorValue("ccmPrjDocCategory"), "Correspondence")) {
 
                 Object chkDoc = checkDublicateEngDocByFileName(mainDocument);
                 if (chkDoc != null) {

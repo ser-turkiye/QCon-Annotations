@@ -37,17 +37,14 @@ public class OnNewBulkReview extends UnifiedAgent {
                 String disp = xdoc.getDisplayName();
                 String dpjn = xdoc.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
                 String category = xdoc.getDescriptorValue("ccmPrjDocCategory");
-                if (category != null && category.trim().equalsIgnoreCase("TRANSMITTAL")){continue;}
+                if (category != null && category.trim().equalsIgnoreCase("Correspondence")){continue;}
                 this.createNewMainProcess((IDocument) xdoc);
             }
-
         } catch (Exception e) {
             log.error("Exception Caught");
             log.error(e.getMessage());
             return resultError(e.getMessage());
         }
-        //getEventTask().getProcessInstance().setSubject("Multi Document Send to Review");
-        getEventTask().getProcessInstance().delete();
         return resultSuccess("Agent Finished Succesfully");
     }
     private void createNewMainProcess(IDocument mainDocument) throws Exception {
