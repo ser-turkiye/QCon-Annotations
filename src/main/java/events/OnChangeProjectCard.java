@@ -9,7 +9,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.ser.foldermanager.IFolder;
 import com.ser.foldermanager.INode;
-import org.json.JSONObject;
 
 import java.util.*;
 
@@ -24,6 +23,9 @@ public class OnChangeProjectCard extends UnifiedAgent {
         try {
             mainDocument = getEventDocument();
             log.info("----OnChangeProjectCard Started ---for IDocument ID:--" + mainDocument.getID());
+
+            updatePrjCardCrspDocTypes2GVList("CCM_CORRESPONDENCE_DOC_TYPE", mainDocument.getDescriptorValue("ccmPRJCard_code"), mainDocument);
+            log.info("----OnChangeProjectCard Updated Project Card GVList ---for (ID):" + mainDocument.getID());
 
             updatePrjCardGVList("CCM_PARAM_PROJECT-CARDS", mainDocument.getDescriptorValue("ccmPRJCard_code"), mainDocument);
             log.info("----OnChangeProjectCard Updated Project Card GVList ---for (ID):" + mainDocument.getID());
@@ -73,6 +75,40 @@ public class OnChangeProjectCard extends UnifiedAgent {
             throw new Exception("Exeption Caught..updatePrjCardGVList: " + e);
         }
     }
+    public void updatePrjCardCrspDocTypes2GVList(String paramName, String paramKey, IDocument doc) throws Exception {
+        try {
+            String cDocTypeTemps = doc.getDescriptorValue("ccmCrspDocTypes");
+
+            String prjCode = (doc.getDescriptorValue("ccmPRJCard_code") != null ? doc.getDescriptorValue("ccmPRJCard_code") : "");
+            removeByPrjCodeFromGVList(paramName, prjCode);
+            if(cDocTypeTemps == null) {return;}
+
+            String[] cDocTypes = cDocTypeTemps.replace("[", "").replace("]", "").split(",");
+
+
+            IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
+            IStringMatrixModifiable srtMatrixModify = getDocumentServer().getStringMatrix(paramName, getSes()).getModifiableCopy(getSes());
+            settingsMatrix.refresh();
+            for (String cDocType : cDocTypes) {
+                if(!cDocType.contains("-")){continue;}
+
+                String cDocShort = cDocType.substring(0, cDocType.indexOf("-"));
+                String cDocName = cDocType.substring(cDocType.indexOf("-") + 1);
+
+                srtMatrixModify.appendRow();
+                srtMatrixModify.commit();
+                settingsMatrix.refresh();
+                int rowCount = settingsMatrix.getRowCount()-1;
+                srtMatrixModify.setValue(rowCount, 0, doc.getDescriptorValue("ccmPRJCard_code"), false);
+                srtMatrixModify.setValue(rowCount, 1, cDocShort, false);
+                srtMatrixModify.setValue(rowCount, 2, cDocName, false);
+                srtMatrixModify.commit();
+            }
+        }catch (Exception e){
+            throw new Exception("Exeption Caught..updatePrjCardMembers2GVList: " + e);
+        }
+    }
+
     public void updatePrjCardMembers2GVList(String paramName, String paramKey, IDocument doc) throws Exception {
         try {
             String managerID = doc.getDescriptorValue("ccmPRJCard_EngMng");
