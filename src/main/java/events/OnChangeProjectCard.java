@@ -71,7 +71,7 @@ public class OnChangeProjectCard extends UnifiedAgent {
             srtMatrixModify.setValue(rowCount, 10, doc.getDescriptorValue("ccmPRJCard_ConsalidatorDrtn"), false);
             srtMatrixModify.setValue(rowCount, 11, doc.getDescriptorValue("ccmPRJCard_DCCDrtn"), false);
             srtMatrixModify.commit();
-        }catch (Exception e){
+        } catch (Exception e){
             throw new Exception("Exeption Caught..updatePrjCardGVList: " + e);
         }
     }
