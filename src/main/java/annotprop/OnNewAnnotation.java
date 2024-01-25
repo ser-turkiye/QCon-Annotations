@@ -9,6 +9,8 @@ import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.awt.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 
@@ -21,12 +23,17 @@ public class OnNewAnnotation extends UnifiedAgent {
     private ITask mainTask;
     private boolean taskRestarted = false;
     private boolean isRefresh;
+    String strFullTimeID = "";
     @Override
     protected Object execute() {
         //(1) Check if the main document is locked
         // if main task is locked then just restart
         mainTask = getEventTask();
         reviewDoc = (IDocument) mainTask.getProcessInstance().getMainInformationObject();
+
+        Date date = Calendar.getInstance().getTime();
+        DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmm");
+        strFullTimeID = dateFormat.format(date);
 
         if(reviewDoc == null) return resultError("Review Doc is NULL");
         try{
@@ -142,7 +149,9 @@ public class OnNewAnnotation extends UnifiedAgent {
         }
         log.info("CopyLayers...listOfLayersToCopy..empty check");
         if(!listOfLayersToCopy.isEmpty()){
-            for (IOverlayLayer layer :listOfLayersToCopy  ) {
+            for (IOverlayLayer layer : listOfLayersToCopy) {
+                log.info("CopyLayers...addlayer to targetdocpart... layer page info:" + layer.getPageInPart());
+                log.info("CopyLayers...addlayer to targetdocpart... layer page info:" + layer.getPageInPart());
                 targetDocPart.addOverlayLayer(layer);
                 log.info("CopyLayers...targetdocpart addlayer");
             }
@@ -153,37 +162,19 @@ public class OnNewAnnotation extends UnifiedAgent {
         boolean isSame = false;
         try {
             log.info("CopyDiffLays sourcedoc to targetdoc:" + targetDoc.getID());
-            List<IOverlay> sourceOverLays = getAllOverlays(sourceDoc);
-            List<IOverlay> targetOverLays = getAllOverlays(targetDoc);
-
+            int sourceOverlayLayerCount = sourceDoc.getPartDocument(0,0).getOverlayLayerCount();
+            int targetOverlayLayerCount = targetDoc.getPartDocument(0,0).getOverlayLayerCount();
             ///if deleted annotation from source, delete all annotation from target
-            if (targetOverLays.size() > sourceOverLays.size()) {
+            if(sourceOverlayLayerCount > targetOverlayLayerCount) {
                 deleteAllOverLays(targetDoc);
-            }
-
-            sourceOverLays = getAllOverlays(sourceDoc);
-            targetOverLays = getAllOverlays(targetDoc);
-
-            if ((!sourceOverLays.isEmpty()) && (targetOverLays.isEmpty())) {
-                log.info("CopyLayers sourcedoc to targetdoc:" + targetDoc.getID());
-                copyLayers(sourceDoc, targetDoc);
-            } else {
-                log.info("sourcedoc layer check targetdoc layers for:" + targetDoc.getID());
-                int targetOverLayLayerCount = targetDoc.getPartDocument(0, 0).getOverlayLayerCount();
-                if(targetOverLayLayerCount > 0) {
-                    IOverlayLayer targetOverLayLayer = targetDoc.getPartDocument(0, 0).getOverlayLayer(0);
-                    for (int i = 0; i < sourceOverLays.size(); i++) {
-                        isSame = false;
-                        for (int k = 0; k < targetOverLays.size(); k++) {
-                            if (isSameOverLay(sourceOverLays.get(i), targetOverLays.get(k))) isSame = true;
-                        }
-
-                        if (!isSame) {
-                            targetOverLayLayer.addOverlay(sourceOverLays.get(i));
-                        }
-                    }
+                for (int i = 0; i < sourceOverlayLayerCount; i++) {
+                    IOverlayLayer sourceOverlayLayer = sourceDoc.getPartDocument(0, 0).getOverlayLayer(i);
+                    targetDoc.getPartDocument(0,0).addOverlayLayer(sourceOverlayLayer);
+                    IOverlayLayer targetOverlayLayer = targetDoc.getPartDocument(0, 0).getOverlayLayer(i);
+                    targetOverlayLayer.setPageInPart(sourceOverlayLayer.getPageInPart());
                 }
             }
+            targetDoc.setDescriptorValue("ccmOriginated",strFullTimeID);
             targetDoc.commit();
             return true;
         }catch(Exception e){
@@ -198,38 +189,17 @@ public class OnNewAnnotation extends UnifiedAgent {
         mainDocPart.removeAllOverlayLayers();
         doc.commit();
     }
-    public  boolean islocked(IDocument doc){
-
-        try {
-            mainTask = getMainTask(doc);
-            if(mainTask.getProcessInstance().findLockInfo().getOwnerID() != null){
-                log.info("Main Task is locked, restarting to attempt later");
-                taskRestarted = true;
-                mainTask.getProcessInstance().unlock();
-                // return resultRestart("Agent Going to sleep");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return false;
-
-    }
     public List<IOverlay>  getAllOverlays(IDocument doc){
-
         IDocumentPart docPart = doc.getPartDocument(0,0);
-
         List<IOverlay> overlays = new ArrayList<>() ;
         int documentOverLayerCount = docPart.getOverlayLayerCount();
         for(int i=0 ; i < documentOverLayerCount ; i++){
             IOverlayLayer overlayLayer = docPart.getOverlayLayer(i);
             int overlayCount = overlayLayer.getOverlayCount();
             for(int k=0; k<overlayCount;k++){
-
                 overlays.add(overlayLayer.getOverlay(k));
             }
         }
-
         return overlays;
     }
     public static boolean isSameOverLayLayer(IOverlayLayer sourceOverlayLayer,IOverlayLayer targetOverlayLayer){
@@ -250,9 +220,7 @@ public class OnNewAnnotation extends UnifiedAgent {
                 }
             }
         }
-
         return sourceOverLayerCount == cnt;
-
     }
     public static boolean isSameOverLay(IOverlay soruceOverLay, IOverlay targetOverLay){
         Point sourceStartPoint;
@@ -353,50 +321,6 @@ public class OnNewAnnotation extends UnifiedAgent {
         }
 
         return false;
-    }
-    public String getParamGVList(String paramName, String paramValue){
-        String rtrn = "";
-
-        IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
-        for(int i = 0; i < settingsMatrix.getRowCount(); ++i) {
-            if (settingsMatrix.getValue(i, 0).equalsIgnoreCase(paramValue)) {
-                rtrn = settingsMatrix.getValue(i, 0);
-            }
-        }
-        return rtrn;
-    }
-    public void appendParamGVList(String paramName, String newValue){
-        IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
-        IStringMatrixModifiable srtMatrixModify = getDocumentServer().getStringMatrix(paramName, getSes()).getModifiableCopy(getSes());
-        srtMatrixModify.appendRow();
-        int rowCount = settingsMatrix.getRowCount();
-        srtMatrixModify.setValue(rowCount,0, newValue, false);
-        srtMatrixModify.commit();
-    }
-    public void deleteParamGVList(String paramName,String value) {
-        IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
-        IStringMatrixModifiable srtMatrixModify = getDocumentServer().getStringMatrix(paramName, getSes()).getModifiableCopy(getSes());
-        for (int i = 0; i < settingsMatrix.getRowCount(); ++i) {
-            if (settingsMatrix.getValue(i, 0).equalsIgnoreCase(value)) {
-                srtMatrixModify.removeRow(i);
-                srtMatrixModify.commit();
-            }
-        }
-    }
-    public void updateParamGVList(String paramName, String oldValue, String newValue){
-
-        IStringMatrix settingsMatrix = getDocumentServer().getStringMatrix(paramName, getSes());
-
-        IStringMatrixModifiable srtMatrixModify = getDocumentServer().getStringMatrix(paramName, getSes()).getModifiableCopy(getSes());
-        for(int i = 0; i < settingsMatrix.getRowCount(); ++i) {
-            if (settingsMatrix.getValue(i, 0).equalsIgnoreCase(oldValue)) {
-                //if(oldValue == settingsMatrix.getValue(i, 1)){
-                    srtMatrixModify.setValue(i,0, newValue, false);
-                    srtMatrixModify.commit();
-                //}
-            }
-        }
-        //int rowCount = settingsMatrix.getRowCount();
     }
     private ITask[] getSubProcesses(String mainDocID) throws Exception {
         StringBuilder builder = new StringBuilder();

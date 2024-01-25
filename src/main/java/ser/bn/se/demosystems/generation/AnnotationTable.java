@@ -40,7 +40,7 @@ public class AnnotationTable extends UnifiedAgent {
             ses = getSes();
             server = ses.getDocumentServer();
             this.helper = new ProcessHelper(getSes());
-            //IInformationObject ttt = getEventInfObj();
+
             if(getEventTask() == null) return resultError("OBJECT CLIENT ID is NULL or not of type ITask");
             log.info("---- agent Started ----");
             IInformationObject informationObject = getEventTask().getProcessInstance().getMainInformationObject();
@@ -51,40 +51,8 @@ public class AnnotationTable extends UnifiedAgent {
                 log.error("Task is locked on.." + getEventTask().getProcessInstance().findLockInfo().getOwnerID());
                 return resultRestart("Restarting Agent");
             }
-
-           /* mainDocument = (IDocument) informationObject;
-            String mainDocID = mainDocument.getID();
-            ITask[] subProcesses = getSubProcesses(mainDocID);
-            for(ITask task : subProcesses){
-                //(1) If task is locked skip else lock it
-                IProcessInstance pi = task.getProcessInstance();
-                if(pi.findLockInfo().getOwnerID() != null) {
-                    log.info("Process Instance is locked, skipping subProcess Document");
-                    continue;
-                }
-                try{
-                    log.info("Getting SubProcess Main Loaded Document");
-                    IInformationObject subProcessObject = pi.getMainInformationObject();
-                    if(subProcessObject == null) continue;
-                    if(!(subProcessObject instanceof  IDocument)) continue;
-                    IDocument subDocument = (IDocument) subProcessObject;
-                    log.info("annotation update start on CRS generation maindocID: " + mainDocID);
-                    log.info("annotation update start on CRS generation subdocID: " + subDocument.getID());
-                    this.copyOnlyDiffentLays(subDocument, mainDocument);
-                    this.copyLayerToOtherSubDocuments(mainDocID,subDocument);
-                    log.info("annotation update finish on CRS generation maindocID: " + mainDocID);
-                    log.info("annotation update finish on CRS generation subdocID: " + subDocument.getID());
-                }catch(Exception e){
-                    log.error("Exception Caught");
-                    log.error(e.getMessage());
-                }finally {
-                    log.info("Unlocking Task");
-                    pi.unlock();
-                }
-            }*/
-
             HashMap<String, String> prjBkmrks = initPrjBookmarks((IDocument) informationObject);
-            //HashMap<String, String> bookmarks = new HashMap<>();
+
             JSONObject bookmarks = new JSONObject();
             for (Map.Entry<String, String> prjBkmrk : prjBkmrks.entrySet()) {
                 String dscpName = prjBkmrk.getValue();
