@@ -32,11 +32,11 @@ class ExampleTests {
         //def agent = new OnSubTaskComplete();
         //def agent = new OnNewAnnotation();
         //def agent = new AnnotationTable();
-        def agent = new GenerateStamp();
+        //def agent = new GenerateStamp();
         //def agent = new OnChangeAnnotation();
         //def agent = new OnChangeDiscipline();
         //def agent = new OnChangeProjectDoc();
-        //def agent = new OnChangeProjectCard();
+        def agent = new OnChangeProjectCard();
         //def agent = new OnUpdateEmployee();
         //def agent = new Convert2PDF();
         //def agent = new OnCancelProcess();
@@ -58,7 +58,7 @@ class ExampleTests {
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24c131ba10-5919-4918-8c82-f83a7678c2a2182023-11-15T13:28:46.751Z013" //anotation table
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24505ce08a-d51a-4199-b9b3-edbb0afb049c182023-12-06T06:21:33.921Z013" //anotation table
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2452a6d5d6-d298-4a60-b48b-82632fae16f5182023-12-13T09:11:18.580Z019" //generate stamp
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aPRJ_FOLDER249a40f87a-b6a4-427d-9c06-f93bc8a72b1b182024-01-04T14:27:22.180Z011" //generate stamp
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD07PRJ_DOC24a1797dfd-3087-499b-9385-6cbe60a6bfc9182023-11-01T13:29:34.664Z011" //changeannotation
 
