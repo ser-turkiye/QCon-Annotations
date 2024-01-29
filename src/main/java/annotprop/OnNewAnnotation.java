@@ -50,6 +50,9 @@ public class OnNewAnnotation extends UnifiedAgent {
 
             log.info("New annotation start for maindoc : " + mainDocID);
             log.info("New annotation start for subdoc : " + reviewDoc.getID());
+            if(mainDocument == null){
+                return resultError("MainDoc cannot be found or deleted. ID:" + mainDocID);
+            }
             if(!this.copyOnlyDiffentLays(reviewDoc, mainDocument)){
                 return resultRestart("Restarting Agent for copyOnlyDifferentLays");
             }
@@ -58,6 +61,9 @@ public class OnNewAnnotation extends UnifiedAgent {
             }
             log.info("New annotation finish for maindoc : " + mainDocID);
             log.info("New annotation finish for subdoc : " + reviewDoc.getID());
+
+            reviewDoc.setDescriptorValue("ccmReleased","1");
+            reviewDoc.commit();
 
         }catch (Exception e){
             log.error("Exception Caught");
@@ -165,7 +171,7 @@ public class OnNewAnnotation extends UnifiedAgent {
             int sourceOverlayLayerCount = sourceDoc.getPartDocument(0,0).getOverlayLayerCount();
             int targetOverlayLayerCount = targetDoc.getPartDocument(0,0).getOverlayLayerCount();
             ///if deleted annotation from source, delete all annotation from target
-            if(sourceOverlayLayerCount > targetOverlayLayerCount) {
+            //if(sourceOverlayLayerCount > targetOverlayLayerCount) {
                 deleteAllOverLays(targetDoc);
                 for (int i = 0; i < sourceOverlayLayerCount; i++) {
                     IOverlayLayer sourceOverlayLayer = sourceDoc.getPartDocument(0, 0).getOverlayLayer(i);
@@ -173,7 +179,7 @@ public class OnNewAnnotation extends UnifiedAgent {
                     IOverlayLayer targetOverlayLayer = targetDoc.getPartDocument(0, 0).getOverlayLayer(i);
                     targetOverlayLayer.setPageInPart(sourceOverlayLayer.getPageInPart());
                 }
-            }
+            //}
             targetDoc.setDescriptorValue("ccmOriginated",strFullTimeID);
             targetDoc.commit();
             return true;
