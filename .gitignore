@@ -44,3 +44,5 @@ bin/
 /.idea/
 /gradle/
 /log/
+
+/src/test/groovy/junit/
