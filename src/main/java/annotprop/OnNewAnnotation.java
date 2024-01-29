@@ -3,31 +3,34 @@ package annotprop;
 import com.ser.blueline.*;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
-import com.ser.blueline.metaDataComponents.IStringMatrix;
-import com.ser.blueline.modifiablemetadata.IStringMatrixModifiable;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import java.awt.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class OnNewAnnotation extends UnifiedAgent {
 
     private Logger log = LogManager.getLogger();
     private ProcessHelper helper;
     private IDocument mainDocument;
+    private ISerClassFactory factory;
     private IDocument reviewDoc;
     private ITask mainTask;
     private boolean taskRestarted = false;
-    private boolean isRefresh;
+
     String strFullTimeID = "";
     @Override
     protected Object execute() {
         //(1) Check if the main document is locked
         // if main task is locked then just restart
+
+        factory = getDocumentServer().getClassFactory();
+
         mainTask = getEventTask();
         reviewDoc = (IDocument) mainTask.getProcessInstance().getMainInformationObject();
 
@@ -38,22 +41,12 @@ public class OnNewAnnotation extends UnifiedAgent {
         if(reviewDoc == null) return resultError("Review Doc is NULL");
         try{
             log.info("---- Agent Started -----" + reviewDoc.getID());
-            String refreshStatus = (String) getParams().get("OBJECTSTATUS");
-            log.info("Extracted Refresh Status: " + refreshStatus);
-            if(refreshStatus == null) isRefresh = false;
-            else isRefresh = refreshStatus.equals("refresh");
 
             this.helper = new ProcessHelper(getSes());
-            log.info("Is Referesh: " + isRefresh);
             String mainDocID = reviewDoc.getDescriptorValue(Conf.Descriptors.MainDocumentID);
             mainDocument = getDocumentServer().getDocument4ID(mainDocID , getSes());
 
-            log.info("New annotation start for maindoc : " + mainDocID);
-            log.info("New annotation start for subdoc : " + reviewDoc.getID());
-            if(mainDocument == null){
-                return resultError("MainDoc cannot be found or deleted. ID:" + mainDocID);
-            }
-            if(!this.copyOnlyDiffentLays(reviewDoc, mainDocument)){
+            if(!this.copyOnlyDiffentLayers(reviewDoc, mainDocument)){
                 return resultRestart("Restarting Agent for copyOnlyDifferentLays");
             }
             if(!this.copyLayerToOtherSubDocuments(mainDocID)){
@@ -61,9 +54,6 @@ public class OnNewAnnotation extends UnifiedAgent {
             }
             log.info("New annotation finish for maindoc : " + mainDocID);
             log.info("New annotation finish for subdoc : " + reviewDoc.getID());
-
-            reviewDoc.setDescriptorValue("ccmReleased","1");
-            reviewDoc.commit();
 
         }catch (Exception e){
             log.error("Exception Caught");
@@ -89,11 +79,11 @@ public class OnNewAnnotation extends UnifiedAgent {
             IProcessInstance pi = task.getProcessInstance();
             if(pi.findLockInfo().getOwnerID() != null) {
                 log.info("Process Instance is locked, skipping subProcess Document");
-                continue;
+              //  continue;
             }
             try{
                 log.info("Locking Sub Task to Update its document for:" + reviewDoc.getID());
-                pi.lock(task);
+                //pi.lock(task);
                 log.info("Getting SubProcess Main Loaded Document for:" + reviewDoc.getID());
                 IInformationObject subProcessObject = pi.getMainInformationObject();
                 if(subProcessObject == null) continue;
@@ -102,7 +92,7 @@ public class OnNewAnnotation extends UnifiedAgent {
                 IDocument subDocument = (IDocument) subProcessObject;
                 if (!Objects.equals(subDocument.getID(), reviewDoc.getID())) {
                     log.info("Start Copying mainDocument to subDocument:" + reviewDoc.getID());
-                    if(!copyOnlyDiffentLays(mainDocument, subDocument)){
+                    if(!copyOnlyDiffentLayers(mainDocument, subDocument)){
                         throw new Exception("Error while copying layers to review documents");
                     }
                 }
@@ -117,103 +107,65 @@ public class OnNewAnnotation extends UnifiedAgent {
         }
         return rtrn;
     }
-    public void copyLayers(IDocument sourceDoc, IDocument targetDoc){
-        String overLayerName = "";
-        boolean isSame=false;
-        log.info("CopyLayers... sourcedoc to targetdoc:" + targetDoc.getID());
-        IDocumentPart sourceDocPart = sourceDoc.getPartDocument( sourceDoc.getDefaultRepresentation() , 0);
-        IDocumentPart targetDocPart = targetDoc.getPartDocument( targetDoc.getDefaultRepresentation() , 0);
 
-        int sourceDocPartTotalOverlayers= sourceDocPart.getOverlayLayerCount();
-        int targetDocPartTotalOverlayers= targetDocPart.getOverlayLayerCount();
-        log.info("CopyLayers...sourcedocPartTotalOverLayers:" + sourceDocPartTotalOverlayers);
-        log.info("CopyLayers...targetDocPartTotalOverlayers:" + targetDocPartTotalOverlayers);
-        List<IOverlayLayer> listOfLayersToCopy = new ArrayList<>();
-        for(int i=0 ; i < sourceDocPartTotalOverlayers ; i++){
-            IOverlayLayer sourceLayer = sourceDocPart.getOverlayLayer(i);
-            String copiedLayerName = sourceLayer.getOverlayName();
-            if(copiedLayerName == null){
-                log.info("*** Copied Layer Name is NULLL");
-                overLayerName =sourceDocPart.getOverlayLayer(i).getOverlayName();
-                copiedLayerName = overLayerName + "-" + ( UUID.randomUUID());
-                sourceDocPart.getOverlayLayer(i).setOverlayName(copiedLayerName);
-                log.info("New Name is: " + copiedLayerName);
-                //reviewDoc.commit();
-            }else if(!(copiedLayerName.contains(overLayerName))) continue;
 
-            for(int k=0 ; k < targetDocPartTotalOverlayers ; k++) {
+    public boolean copyOnlyDiffentLayers(IDocument sourceDoc, IDocument targetDoc) throws Exception {
+        boolean isExist = false;
+        boolean isUpdated = false;
 
-                IOverlayLayer targetLayer = targetDocPart.getOverlayLayer(k);
-                if(isSameOverLayLayer(sourceLayer,targetLayer) ){
-                    isSame = true;
-                    break;
-                }
-            }
-
-            if (!isSame) listOfLayersToCopy.add(sourceLayer);
-
-        }
-        log.info("CopyLayers...listOfLayersToCopy..empty check");
-        if(!listOfLayersToCopy.isEmpty()){
-            for (IOverlayLayer layer : listOfLayersToCopy) {
-                log.info("CopyLayers...addlayer to targetdocpart... layer page info:" + layer.getPageInPart());
-                log.info("CopyLayers...addlayer to targetdocpart... layer page info:" + layer.getPageInPart());
-                targetDocPart.addOverlayLayer(layer);
-                log.info("CopyLayers...targetdocpart addlayer");
-            }
-            targetDoc.commit();
-        }
-    }
-    public boolean copyOnlyDiffentLays(IDocument sourceDoc, IDocument targetDoc) throws Exception{
-        boolean isSame = false;
         try {
-            log.info("CopyDiffLays sourcedoc to targetdoc:" + targetDoc.getID());
-            int sourceOverlayLayerCount = sourceDoc.getPartDocument(0,0).getOverlayLayerCount();
-            int targetOverlayLayerCount = targetDoc.getPartDocument(0,0).getOverlayLayerCount();
-            ///if deleted annotation from source, delete all annotation from target
-            //if(sourceOverlayLayerCount > targetOverlayLayerCount) {
-                deleteAllOverLays(targetDoc);
-                for (int i = 0; i < sourceOverlayLayerCount; i++) {
-                    IOverlayLayer sourceOverlayLayer = sourceDoc.getPartDocument(0, 0).getOverlayLayer(i);
-                    targetDoc.getPartDocument(0,0).addOverlayLayer(sourceOverlayLayer);
-                    IOverlayLayer targetOverlayLayer = targetDoc.getPartDocument(0, 0).getOverlayLayer(i);
-                    targetOverlayLayer.setPageInPart(sourceOverlayLayer.getPageInPart());
+
+            List<IOverlayLayer> sourceOverLayers =getAllOverlayers(sourceDoc);
+            List<IOverlayLayer> targetOverLayers =getAllOverlayers(targetDoc);
+
+            for(IOverlayLayer sourceLayer: sourceOverLayers){
+                isExist = false;
+
+                for(IOverlayLayer targetLayer : targetOverLayers){
+
+                    if( isSameOverLayLayer(sourceLayer,targetLayer,true)){
+                      isExist = true;
+                      break;
+                    }
+
                 }
-            //}
-            targetDoc.setDescriptorValue("ccmOriginated",strFullTimeID);
-            targetDoc.commit();
+
+                if(!isExist){
+                    targetDoc.getPartDocument(0,0).addOverlayLayer(sourceLayer);
+                    isUpdated = true;
+                }
+
+            }
+
+            if(isUpdated) targetDoc.commit();
+
             return true;
+
         }catch(Exception e){
             log.error("Exception Caught : function is copyOnlyDiffentLays");
             log.error(e.getMessage());
             return false;
         }
     }
-    public void deleteAllOverLays(IDocument doc){
-        log.info("Start Remove All Layer from MAIN DOC : " + doc.getID());
-        IDocumentPart mainDocPart = doc.getPartDocument(0,0);
-        mainDocPart.removeAllOverlayLayers();
-        doc.commit();
-    }
-    public List<IOverlay>  getAllOverlays(IDocument doc){
-        IDocumentPart docPart = doc.getPartDocument(0,0);
-        List<IOverlay> overlays = new ArrayList<>() ;
-        int documentOverLayerCount = docPart.getOverlayLayerCount();
-        for(int i=0 ; i < documentOverLayerCount ; i++){
-            IOverlayLayer overlayLayer = docPart.getOverlayLayer(i);
-            int overlayCount = overlayLayer.getOverlayCount();
-            for(int k=0; k<overlayCount;k++){
-                overlays.add(overlayLayer.getOverlay(k));
-            }
+
+    public List<IOverlayLayer> getAllOverlayers(IDocument sourceDoc){
+        List<IOverlayLayer> sourceOverLayers = new ArrayList<>();
+
+
+        for(int cnt=0 ; cnt<sourceDoc.getPartDocument(0,0).getOverlayLayerCount();cnt++){
+            sourceOverLayers.add(sourceDoc.getPartDocument(0,0).getOverlayLayer(cnt));
         }
-        return overlays;
+
+        return sourceOverLayers;
     }
-    public static boolean isSameOverLayLayer(IOverlayLayer sourceOverlayLayer,IOverlayLayer targetOverlayLayer){
+
+    public static boolean isSameOverLayLayer(IOverlayLayer sourceOverlayLayer,IOverlayLayer targetOverlayLayer , boolean checkPageNo){
 
         int cnt=0;
         int sourceOverLayerCount = sourceOverlayLayer.getOverlayCount();
         int targetOverLayerCount = targetOverlayLayer.getOverlayCount();
 
+        if(checkPageNo && sourceOverlayLayer.getPageInPart() != targetOverlayLayer.getPageInPart()) return false;
         if(sourceOverLayerCount != targetOverLayerCount) return false;
 
         for(int i=0 ; i < sourceOverLayerCount ;i++){
@@ -240,109 +192,95 @@ public class OnNewAnnotation extends UnifiedAgent {
 
         if(soruceOverLay.getObjectType() == targetOverLay.getObjectType() ) {
 
-                int oType = soruceOverLay.getObjectType();
-                switch (oType) {
-                    case 1: //Marker Overlay
+            int oType = soruceOverLay.getObjectType();
+            switch (oType) {
+                case 1: //Marker Overlay
 
-                        sourceStartPoint = ((IMarkerOverlay) soruceOverLay).getStartPosition();
-                        sourceEndPoint = ((IMarkerOverlay) soruceOverLay).getEndPosition();
+                    sourceStartPoint = ((IMarkerOverlay) soruceOverLay).getStartPosition();
+                    sourceEndPoint = ((IMarkerOverlay) soruceOverLay).getEndPosition();
 
-                        targetStartPoint = ((IMarkerOverlay) targetOverLay).getStartPosition();
-                        tagetEndPoint = ((IMarkerOverlay) targetOverLay).getEndPosition();
+                    targetStartPoint = ((IMarkerOverlay) targetOverLay).getStartPosition();
+                    tagetEndPoint = ((IMarkerOverlay) targetOverLay).getEndPosition();
 
-                        sourceMemo = Arrays.toString(((IMarkerOverlay) soruceOverLay).getMemo());
-                        targetMemo = Arrays.toString(((IMarkerOverlay) targetOverLay).getMemo());
+                    sourceMemo = Arrays.toString(((IMarkerOverlay) soruceOverLay).getMemo());
+                    targetMemo = Arrays.toString(((IMarkerOverlay) targetOverLay).getMemo());
 
-                        if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
-                        if(sourceEndPoint.getX() != tagetEndPoint.getX() || sourceEndPoint.getY() != tagetEndPoint.getY()) return false;
-                        return sourceMemo.equals(targetMemo);
+                    if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
+                    if(sourceEndPoint.getX() != tagetEndPoint.getX() || sourceEndPoint.getY() != tagetEndPoint.getY()) return false;
+                    return sourceMemo.equals(targetMemo);
 
-                    case 2: //COMMENT OVERLAY
-                        sourceStartPoint = ((ICommentOverlay) soruceOverLay).getStartPosition();
-                        targetStartPoint = ((ICommentOverlay) targetOverLay).getStartPosition();
+                case 2: //COMMENT OVERLAY
+                    sourceStartPoint = ((ICommentOverlay) soruceOverLay).getStartPosition();
+                    targetStartPoint = ((ICommentOverlay) targetOverLay).getStartPosition();
 
-                        sourceMemo = Arrays.toString(((ICommentOverlay) soruceOverLay).getText());
-                        targetMemo = Arrays.toString(((ICommentOverlay) targetOverLay).getText());
+                    sourceMemo = Arrays.toString(((ICommentOverlay) soruceOverLay).getText());
+                    targetMemo = Arrays.toString(((ICommentOverlay) targetOverLay).getText());
 
-                        if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
-                        return sourceMemo.equals(targetMemo);
-                    case 3: //NOTE OVERLAY
-                        sourceStartPoint = ((INoteOverlay) soruceOverLay).getStartPosition();
-                        targetStartPoint = ((INoteOverlay) targetOverLay).getStartPosition();
+                    if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
+                    return sourceMemo.equals(targetMemo);
+                case 3: //NOTE OVERLAY
+                    sourceStartPoint = ((INoteOverlay) soruceOverLay).getStartPosition();
+                    targetStartPoint = ((INoteOverlay) targetOverLay).getStartPosition();
 
-                        sourceMemo = Arrays.toString(((INoteOverlay) soruceOverLay).getText());
-                        targetMemo = Arrays.toString(((INoteOverlay) targetOverLay).getText());
+                    sourceMemo = Arrays.toString(((INoteOverlay) soruceOverLay).getText());
+                    targetMemo = Arrays.toString(((INoteOverlay) targetOverLay).getText());
 
-                        if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
-                        return sourceMemo.equals(targetMemo);
-                    case 4: //ARROW OVERLAY
-                        sourceStartPoint = ((IArrowOverlay) soruceOverLay).getStartPosition();
-                        sourceEndPoint = ((IArrowOverlay) soruceOverLay).getEndPosition();
+                    if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
+                    return sourceMemo.equals(targetMemo);
+                case 4: //ARROW OVERLAY
+                    sourceStartPoint = ((IArrowOverlay) soruceOverLay).getStartPosition();
+                    sourceEndPoint = ((IArrowOverlay) soruceOverLay).getEndPosition();
 
-                        targetStartPoint = ((IArrowOverlay) targetOverLay).getStartPosition();
-                        tagetEndPoint = ((IArrowOverlay) targetOverLay).getEndPosition();
+                    targetStartPoint = ((IArrowOverlay) targetOverLay).getStartPosition();
+                    tagetEndPoint = ((IArrowOverlay) targetOverLay).getEndPosition();
 
-                        sourceMemo = Arrays.toString(((IArrowOverlay) soruceOverLay).getMemo());
-                        targetMemo = Arrays.toString(((IArrowOverlay) targetOverLay).getMemo());
+                    sourceMemo = Arrays.toString(((IArrowOverlay) soruceOverLay).getMemo());
+                    targetMemo = Arrays.toString(((IArrowOverlay) targetOverLay).getMemo());
 
-                        if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
-                        if(sourceEndPoint.getX() != tagetEndPoint.getX() || sourceEndPoint.getY() != tagetEndPoint.getY()) return false;
-                        return sourceMemo.equals(targetMemo);
-                    case 5: //FREEHAND OVERLAY
-                        sourceMemo = Arrays.toString(((IFreehandOverlay) soruceOverLay).getMemo());
-                        targetMemo = Arrays.toString(((IFreehandOverlay) targetOverLay).getMemo());
+                    if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
+                    if(sourceEndPoint.getX() != tagetEndPoint.getX() || sourceEndPoint.getY() != tagetEndPoint.getY()) return false;
+                    return sourceMemo.equals(targetMemo);
+                case 5: //FREEHAND OVERLAY
+                    sourceMemo = Arrays.toString(((IFreehandOverlay) soruceOverLay).getMemo());
+                    targetMemo = Arrays.toString(((IFreehandOverlay) targetOverLay).getMemo());
 
-                        return sourceMemo.equals(targetMemo);
-                    case 6: //STAMPOVERLAY
-                        sourceMemo = Arrays.toString(((IStampOverlay) soruceOverLay).getMemo());
-                        targetMemo = Arrays.toString(((IStampOverlay) targetOverLay).getMemo());
+                    return sourceMemo.equals(targetMemo);
+                case 6: //STAMPOVERLAY
+                    sourceMemo = Arrays.toString(((IStampOverlay) soruceOverLay).getMemo());
+                    targetMemo = Arrays.toString(((IStampOverlay) targetOverLay).getMemo());
 
-                        return sourceMemo.equals(targetMemo);
-                    case 8: //LINK OVERLAY
-                        sourceStartPoint = ((ILinkOverlay) soruceOverLay).getStartPosition();
-                        targetStartPoint = ((ILinkOverlay) targetOverLay).getStartPosition();
+                    return sourceMemo.equals(targetMemo);
+                case 8: //LINK OVERLAY
+                    sourceStartPoint = ((ILinkOverlay) soruceOverLay).getStartPosition();
+                    targetStartPoint = ((ILinkOverlay) targetOverLay).getStartPosition();
 
-                        sourceMemo = ((ILinkOverlay) soruceOverLay).getAdditionalText();
-                        targetMemo = ((ILinkOverlay) targetOverLay).getAdditionalText();
+                    sourceMemo = ((ILinkOverlay) soruceOverLay).getAdditionalText();
+                    targetMemo = ((ILinkOverlay) targetOverLay).getAdditionalText();
 
-                        if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
-                        return sourceMemo.equals(targetMemo);
-                    case 9: //SHAPE OVERLAY
-                        sourceStartPoint = ((IShapeOverlay) soruceOverLay).getStartPosition();
-                        sourceEndPoint = ((IShapeOverlay) soruceOverLay).getEndPosition();
+                    if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
+                    return sourceMemo.equals(targetMemo);
+                case 9: //SHAPE OVERLAY
+                    sourceStartPoint = ((IShapeOverlay) soruceOverLay).getStartPosition();
+                    sourceEndPoint = ((IShapeOverlay) soruceOverLay).getEndPosition();
 
-                        targetStartPoint = ((IShapeOverlay) targetOverLay).getStartPosition();
-                        tagetEndPoint = ((IShapeOverlay) targetOverLay).getEndPosition();
+                    targetStartPoint = ((IShapeOverlay) targetOverLay).getStartPosition();
+                    tagetEndPoint = ((IShapeOverlay) targetOverLay).getEndPosition();
 
-                        sourceMemo = Arrays.toString(((IShapeOverlay) soruceOverLay).getMemo());
-                        targetMemo = Arrays.toString(((IShapeOverlay) targetOverLay).getMemo());
+                    sourceMemo = Arrays.toString(((IShapeOverlay) soruceOverLay).getMemo());
+                    targetMemo = Arrays.toString(((IShapeOverlay) targetOverLay).getMemo());
 
-                        if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
-                        if(sourceEndPoint.getX() != tagetEndPoint.getX() || sourceEndPoint.getY() != tagetEndPoint.getY()) return false;
-                        return sourceMemo.equals(targetMemo);
-                    default: //UNKNOWN OVERLAY
-                        return false;
-                }
+                    if(sourceStartPoint.getX() != targetStartPoint.getX() || sourceStartPoint.getY() != targetStartPoint.getY()) return false;
+                    if(sourceEndPoint.getX() != tagetEndPoint.getX() || sourceEndPoint.getY() != tagetEndPoint.getY()) return false;
+                    return sourceMemo.equals(targetMemo);
+                default: //UNKNOWN OVERLAY
+                    return false;
+            }
 
         }
 
         return false;
     }
-    private ITask[] getSubProcesses(String mainDocID) throws Exception {
-        StringBuilder builder = new StringBuilder();
-        builder.append("TYPE = '").append(Conf.ClassIDs.ReviewSubProcess).append("'");
-        //builder.append(" AND WFL_TASK_STATUS IN (2,4,16)");
-        builder.append(" AND ").append(Conf.DescriptorLiterals.MainDocumentID).append(" = '").append(mainDocID).append("'");
-        String whereClause = builder.toString();
-        log.info("Where Clause: " + whereClause);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 50);
-        if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
-        ITask[] newArr = new ITask[informationObjects.length];
-        for(int i=0 ; i < informationObjects.length ; i++){
-            newArr[i] = (ITask) informationObjects[i];
-        }
-        return newArr;
-    }
+
     private ITask[] getSubTasks(String mainDocID) throws Exception {
         List<ITask> rtrn = new ArrayList<>();
         StringBuilder builder = new StringBuilder();
@@ -359,24 +297,5 @@ public class OnNewAnnotation extends UnifiedAgent {
         }
         return rtrn.toArray(new ITask[0]);
     }
-    private ITask getMainTask(IDocument doc) throws Exception {
-        StringBuilder builder = new StringBuilder();
-        if(doc.getClassID() == Conf.ClassIDs.EngineeringCopy){
-            builder.append("TYPE = '").append(Conf.ClassIDs.ReviewSubProcess).append("'");
-            builder.append(" AND WFL_TASK_NAME = '").append(Conf.Tasks.SubProcessFirstTask).append("'")
-                    .append(" AND ")
-                    .append(Conf.DescriptorLiterals.SubDocumentID).append(" = '").append(doc.getID()).append("'");
-        }else{
-            builder.append("TYPE = '").append(Conf.ClassIDs.MainReviewProcess).append("'");
-            builder.append(" AND WFL_TASK_NAME = '").append(Conf.Tasks.MainProcessFirstTask).append("'")
-                    .append(" AND ")
-                    .append(Conf.DescriptorLiterals.MainDocumentID).append(" = '").append(doc.getID()).append("'");
-        }
-        String whereClause = builder.toString();
-        log.info("Where Clause: " + whereClause);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
-        if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
-        if(informationObjects.length > 1) throw new Exception("Multiple hits found for query: " + whereClause);
-        return (ITask) informationObjects[0];
-    }
+
 }
