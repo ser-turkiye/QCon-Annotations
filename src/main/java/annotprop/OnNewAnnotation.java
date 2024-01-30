@@ -55,6 +55,9 @@ public class OnNewAnnotation extends UnifiedAgent {
             log.info("New annotation finish for maindoc : " + mainDocID);
             log.info("New annotation finish for subdoc : " + reviewDoc.getID());
 
+            reviewDoc.setDescriptorValue("ccmApproved","1");
+            reviewDoc.commit();
+
         }catch (Exception e){
             log.error("Exception Caught");
             log.error(e.getMessage());
