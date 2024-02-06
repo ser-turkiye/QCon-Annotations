@@ -4,6 +4,7 @@ import de.ser.doxis4.agentserver.AgentExecutionResult
 import events.OnCancelProcess
 import events.OnChangeProjectCard
 import events.OnChangeProjectDoc
+import events.OnCreateDCCExcel
 import events.OnUpdateEmployee
 import org.junit.*
 import ser.bn.se.demosystems.*;
@@ -31,14 +32,15 @@ class ExampleTests {
         //def agent = new OnNewTask();
         //def agent = new OnSubTaskComplete();
         //def agent = new OnNewAnnotation();
-        //def agent = new AnnotationTable();
+        //def agent = new OnNewBulkReview();
+        def agent = new AnnotationTable();
         //def agent = new GenerateStamp();
         //def agent = new OnChangeAnnotation();
         //def agent = new OnChangeDiscipline();
         //def agent = new OnChangeProjectDoc();
-        def agent = new OnChangeProjectCard();
+        //def agent = new OnChangeProjectCard();
         //def agent = new OnUpdateEmployee();
-        //def agent = new Convert2PDF();
+        //def agent = new OnCreateDCCExcel();
         //def agent = new OnCancelProcess();
         //def agent = new TestTaskRemove();
 
@@ -51,23 +53,27 @@ class ExampleTests {
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24cd37e29b-1624-4674-b22b-eb6985e733fd182023-12-08T07:11:18.933Z011" //newannotation-tolunay
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2462cff716-c335-423d-8224-7af9ae0843d0182023-12-07T14:41:26.257Z012" //newannotation-tolunay
 
-        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24160d1fe2-3f07-4310-adfa-e233f1c33565182023-12-11T10:56:19.079Z011" //on new task
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24487ed15b-079a-480e-8187-a269c72bf044182024-01-02T09:58:00.700Z010" //on new task
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24f77ede01-2e6d-4b4d-878c-96cb30672569182024-01-25T17:10:18.011Z011" //on new annotation
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24d84780c7-98a4-4244-967e-5744d4593bca182023-12-04T06:43:15.399Z012" //on sub task complete
 
-        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2421f67c40-f6a0-445a-b24e-8c20a316581e182023-11-02T06:32:42.619Z013" //anotation table
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM247fdcd280-f11f-428e-9463-65bac3d4e814182023-12-29T16:11:18.769Z010" //on bulk review
+
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24e7fdb1ff-204a-4937-8eaf-343874dc0854182024-02-06T08:13:21.071Z013" //anotation table
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24c131ba10-5919-4918-8c82-f83a7678c2a2182023-11-15T13:28:46.751Z013" //anotation table
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24505ce08a-d51a-4199-b9b3-edbb0afb049c182023-12-06T06:21:33.921Z013" //anotation table
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aPRJ_FOLDER249a40f87a-b6a4-427d-9c06-f93bc8a72b1b182024-01-04T14:27:22.180Z011" //generate stamp
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2452a6d5d6-d298-4a60-b48b-82632fae16f5182023-12-13T09:11:18.580Z019" //generate stamp
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD06D_QCON24d967d8b9-1f04-412b-9d8e-30fd55c02c8b182023-12-25T07:20:47.799Z011" //DCCExcel
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD07PRJ_DOC24a1797dfd-3087-499b-9385-6cbe60a6bfc9182023-11-01T13:29:34.664Z011" //changeannotation
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aPRJ_FOLDER24c4515c15-8008-48a0-9d1c-f466079d2b03182023-10-31T11:35:58.376Z011" //change discipline
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aPRJ_FOLDER24543de771-386f-413b-bf0c-142f53986b97182023-11-01T06:49:27.928Z011" //change discipline
 
-        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD07PRJ_DOC24aacfca94-4ae6-4da5-9536-aea94d7a7dcc182023-12-03T14:05:25.681Z011" //change prj doc
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD07PRJ_DOC2417b4f3eb-7689-4ffe-9c5b-f31903abb32b182023-12-28T10:23:35.044Z011" //change prj doc
 
-        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aPRJ_FOLDER245b3e7202-c582-41df-a21a-f943ddde7c5f182023-11-15T07:10:36.815Z011" //change prj card
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aPRJ_FOLDER24359e212c-459e-4714-a787-0fc2ca9b6add182023-11-29T08:15:03.302Z011" //change prj card
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aF_EMPLOYEE24335684f3-cf16-4571-8dba-0a78aa1ff8e7182023-12-01T12:45:05.040Z011"  //change employee file
 
