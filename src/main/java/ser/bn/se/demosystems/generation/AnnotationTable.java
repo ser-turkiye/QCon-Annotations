@@ -217,6 +217,7 @@ public class AnnotationTable extends UnifiedAgent {
 
         int cnt = 0;
         int cnt1 = 0;
+        String comment = "";
         int totalOverLayersCount = doc.getPartDocument(0, 0).getOverlayLayerCount();
         for(int i=0 ; i < totalOverLayersCount ; i++){
             IOverlayLayer overlayer = doc.getPartDocument(0, 0).getOverlayLayer(i);
@@ -225,9 +226,12 @@ public class AnnotationTable extends UnifiedAgent {
             int totalOverLayerElements = overlayer.getOverlayCount();
             for(int j = 0 ; j < totalOverLayerElements ; j++){
                 IOverlay overlay = overlayer.getOverlay(j);
+                comment = getTextOrType(overlay);
                 log.info("(I) \tAnno Creator " + overlay.getCreatingUser());
                 log.info("(I) \tAnno Date " + overlay.getCreationDateAsString());
                 log.info("(I) \tAnno Type " + (String)types.get(overlay.getObjectType()));
+                log.info("(I) \tAnno Comment " + comment);
+                if(comment.contains("No Text")){continue;}
                 cnt++;
                 cnt1 = cnt -1;
                 String[] row = new String[5];
