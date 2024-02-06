@@ -51,9 +51,9 @@ public class AnnotationTable extends UnifiedAgent {
                 log.error("Task is locked on.." + getEventTask().getProcessInstance().findLockInfo().getOwnerID());
                 return resultRestart("Restarting Agent");
             }
-            HashMap<String, String> prjBkmrks = initPrjBookmarks((IDocument) informationObject);
-
             JSONObject bookmarks = new JSONObject();
+
+            HashMap<String, String> prjBkmrks = initPrjBookmarks((IDocument) informationObject);
             for (Map.Entry<String, String> prjBkmrk : prjBkmrks.entrySet()) {
                 String dscpName = prjBkmrk.getValue();
                 System.out.println("*** PRJ-KEY :" + prjBkmrk.getKey() + "*** PRJ-DSCP :" + dscpName);
@@ -196,7 +196,7 @@ public class AnnotationTable extends UnifiedAgent {
             text = "" + Arrays.asList(((IMarkerOverlay)overlay).getMemo());
             return (text.replaceAll("\\[", "").replaceAll("\\]", ""));
         } else {
-            return "No Text";
+            return "@@NOTEXT@@";
         }
     }
 
@@ -224,6 +224,7 @@ public class AnnotationTable extends UnifiedAgent {
             log.info("(I) Layer Name " + overlayer.getOverlayName());
             log.info("(I) Layer Page " + overlayer.getPageInPart());
             int totalOverLayerElements = overlayer.getOverlayCount();
+            comment = "";
             for(int j = 0 ; j < totalOverLayerElements ; j++){
                 IOverlay overlay = overlayer.getOverlay(j);
                 comment = getTextOrType(overlay);
@@ -231,7 +232,8 @@ public class AnnotationTable extends UnifiedAgent {
                 log.info("(I) \tAnno Date " + overlay.getCreationDateAsString());
                 log.info("(I) \tAnno Type " + (String)types.get(overlay.getObjectType()));
                 log.info("(I) \tAnno Comment " + comment);
-                if(comment.contains("No Text")){continue;}
+                if(comment.isEmpty()){continue;}
+                if(comment.equals("@@NOTEXT@@")){continue;}
                 cnt++;
                 cnt1 = cnt -1;
                 String[] row = new String[5];
@@ -253,7 +255,6 @@ public class AnnotationTable extends UnifiedAgent {
                 //row[4] = overlay.getCreatingUserID() + "-" + overlay.getCreationDateAsString() + "-" + overlay.getObjectType();
                 row[4] = "";
                 prjbookmarks.put("response" + (cnt1 > 9 ? cnt1 : "0" + cnt1) , row[4]);
-
             }
         }
 
