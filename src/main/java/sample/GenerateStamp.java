@@ -73,11 +73,7 @@ public class GenerateStamp extends UnifiedAgent {
                 return resultRestart("Restarting Agent");
             }
 
-            //String decisionCode = this.getEventTask().getProcessInstance().findTaskByNumericID(this.getEventTask().getPreviousTaskNumericID()).getDecision().getCode();
-            //String decisionCode = this.getEventTask().getDescriptorValue("ccmPrjDocStatus");
-
-            String userName = this.getEventTask().getProcessInstance().findTaskByNumericID(this.getEventTask().getPreviousTaskNumericID()).getFinishedBy().getLogin();
-            String prcsName = this.getEventTask().getProcessInstance().getDisplayName();
+            IDocument mainDoc = (IDocument) this.getEventTask().getProcessInstance().getMainInformationObject();
 
             Long prevTaskID = this.getEventTask().getPreviousTaskNumericID();
             ITask prevTask = this.getEventTask().getProcessInstance().findTaskByNumericID(this.getEventTask().getPreviousTaskNumericID());
@@ -85,8 +81,8 @@ public class GenerateStamp extends UnifiedAgent {
             Long prev2TaskID = prevTask.getPreviousTaskNumericID();
             ITask prev2Task = this.getEventTask().getProcessInstance().findTaskByNumericID(prev2TaskID);
 
-            //String decisionCode = prev2Task.getDescriptorValue("TaskDecisioncode");
-            String decisionCode = prev2Task.getDecision().getCode();
+            //String decisionCode = prev2Task.getDecision().getCode();
+            String decisionCode = mainDoc.getDescriptorValue("ccmPrjDocApprCode");
             String completedBy = prev2Task.getFinishedBy().getName();
 
             String prjCode = this.getEventTask().getDescriptorValue("ccmPRJCard_code");
@@ -94,8 +90,6 @@ public class GenerateStamp extends UnifiedAgent {
 
             this.log.info("Consalidator Completed By: " + completedBy);
 
-            //byte[] stamp = this.produceImage(220, 120, decisionCode, userName);
-            //byte[] stamp = this.produceImage(220, 120, decisionCode, completedBy);
             if(!Objects.equals(isEnableStamp, "false") && isEnableStamp!=null) {
                 String ctpn = "REVIEW_STAMP_TEMPLATE";
                 IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
@@ -111,9 +105,11 @@ public class GenerateStamp extends UnifiedAgent {
                 }
             }
 
+            /*ApproveCode set etme islemi UpdateWFTask agent a alındı
             IDocument mainDoc = (IDocument) this.getEventTask().getProcessInstance().getMainInformationObject();
             mainDoc.setDescriptorValue("ccmPrjDocApprCode",decisionCode);
             mainDoc.commit();
+            */
 
         } catch (Exception var13) {
             this.log.info(var13.getMessage());
