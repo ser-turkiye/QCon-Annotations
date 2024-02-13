@@ -189,7 +189,8 @@ public class AnnotationTable extends UnifiedAgent {
         } else if (overlay instanceof IArrowOverlay) {
             log.info("(I)\t\tStart " + ((IArrowOverlay)overlay).getStartPosition());
             log.info("(I)\t\tEnd " + ((IArrowOverlay)overlay).getEndPosition());
-            return "No Text";
+            text = "" + Arrays.asList(((IArrowOverlay)overlay).getMemo());
+            return (text.replaceAll("\\[", "").replaceAll("\\]", ""));
         } else if (overlay instanceof IMarkerOverlay) {
             log.info("(I)\t\tStart " + ((IMarkerOverlay)overlay).getStartPosition());
             log.info("(I)\t\tEnd " + ((IMarkerOverlay)overlay).getEndPosition());
