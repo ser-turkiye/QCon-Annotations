@@ -3,13 +3,10 @@ package ser.bn.se.demosystems.generation;
 import annotprop.Conf;
 import annotprop.ProcessHelper;
 import annotprop.Utils;
-import annotprop.BookMark;
 import com.ser.blueline.*;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import com.ser.blueline.metaDataComponents.IArchiveClass;
-import com.ser.blueline.metaDataComponents.IStringMatrix;
-import com.ser.blueline.modifiablemetadata.IStringMatrixModifiable;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -185,11 +182,12 @@ public class AnnotationTable extends UnifiedAgent {
         } else if (overlay instanceof ILinkOverlay) {
             log.info("(I)\t\tURL " + ((ILinkOverlay)overlay).getURL());
             log.info("(I)\t\tText " + ((ILinkOverlay)overlay).getAdditionalText());
-           return(((ILinkOverlay)overlay).getURL() + " : " + ((ILinkOverlay)overlay).getAdditionalText());
+            return(((ILinkOverlay)overlay).getURL() + " : " + ((ILinkOverlay)overlay).getAdditionalText());
         } else if (overlay instanceof IArrowOverlay) {
             log.info("(I)\t\tStart " + ((IArrowOverlay)overlay).getStartPosition());
             log.info("(I)\t\tEnd " + ((IArrowOverlay)overlay).getEndPosition());
-            return "No Text";
+            text = "" + Arrays.asList(((IArrowOverlay)overlay).getMemo());
+            return (text.replaceAll("\\[", "").replaceAll("\\]", ""));
         } else if (overlay instanceof IMarkerOverlay) {
             log.info("(I)\t\tStart " + ((IMarkerOverlay)overlay).getStartPosition());
             log.info("(I)\t\tEnd " + ((IMarkerOverlay)overlay).getEndPosition());
@@ -288,6 +286,12 @@ public class AnnotationTable extends UnifiedAgent {
             valDocNo = iobj.getDescriptorValue("ccmPrjDocNumber");
         }
         prjBkmrks.put("docNo", (valDocNo == null ? "" : valDocNo));
+
+        String valRevNo = doc.getDescriptorValue("ccmPrjDocRevision");
+        if(valRevNo == null){
+            valRevNo = iobj.getDescriptorValue("ccmPrjDocRevision");
+        }
+        prjBkmrks.put("revNo", (valRevNo == null ? "" : valRevNo));
 
 
         String valTN = doc.getDescriptorValue("ccmPrjDocTransOutCode");
