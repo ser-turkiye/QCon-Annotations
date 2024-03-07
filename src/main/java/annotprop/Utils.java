@@ -5,6 +5,8 @@ import com.ser.blueline.*;
 import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IWorkbasket;
 import com.ser.blueline.metaDataComponents.*;
+import com.ser.foldermanager.IElement;
+import com.ser.foldermanager.IElements;
 import com.ser.foldermanager.IFolder;
 import com.ser.foldermanager.INode;
 import com.spire.xls.FileFormat;
@@ -21,6 +23,8 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
@@ -38,7 +42,10 @@ import java.util.zip.ZipOutputStream;
 import ser.bn.se.demosystems.documents.*;
 
 public class Utils {
-
+    public static Logger log = LogManager.getLogger();
+    public static ISession session = null;
+    public static IDocumentServer server = null;
+    public static IBpmService bpm;
     public static JSONObject getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = ses.getDocumentServer().getStringMatrix("CCM_SYSTEM_CONFIG", ses);
@@ -279,7 +286,7 @@ public class Utils {
     static JSONObject getWorkbasket(ISession ses, IDocumentServer srv, String userID) throws Exception {
         return getWorkbasket(ses, srv, userID, null);
     }
-    public static IDocument getTemplateDocument(String prjNo, String tpltName, ProcessHelper helper)  {
+    /*public static IDocument getTemplateDocumentOLD(String prjNo, String tpltName, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
                 .append(" AND ")
@@ -292,8 +299,68 @@ public class Utils {
         IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.Company} , whereClause , 1);
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
+    }*/
+    public static JSONObject getProjectWorkspaces( ProcessHelper helper) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Conf.ClassIDs.ProjectWorkspace).append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
+
+        IInformationObject[] list = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , "", 0, false);
+        JSONObject rtrn = new JSONObject();
+
+        for(IInformationObject item : list){
+
+            String prjn = item.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+            prjn = (prjn == null ? "" : prjn);
+
+            if(prjn.isEmpty()){continue;}
+            if(rtrn.has(prjn)){continue;}
+            rtrn.put(prjn, item);
+        }
+
+        return rtrn;
     }
-    static IInformationObject getProjectWorkspace(String prjn, ProcessHelper helper) {
+    public static IInformationObject getProjectWorkspace(String prjn, ProcessHelper helper) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Conf.ClassIDs.ProjectWorkspace).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjn).append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
+
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , "", 1, false);
+        if(informationObjects.length < 1) {return null;}
+        return informationObjects[0];
+    }
+    public static IDocument getTemplateDocument(IInformationObject info, String tpltName) throws Exception {
+        List<INode> nods = ((IFolder) info).getNodesByName("Templates");
+        IDocument rtrn = null;
+        for(INode node : nods){
+            IElements elms = node.getElements();
+
+            for(int i=0;i<elms.getCount2();i++) {
+                IElement nelement = elms.getItem2(i);
+                String edocID = nelement.getLink();
+                IInformationObject tplt = info.getSession().getDocumentServer().getInformationObjectByID(edocID, info.getSession());
+                if(tplt == null){continue;}
+
+                if(!hasDescriptor(tplt, Conf.Descriptors.TemplateName)){continue;}
+
+                String etpn = tplt.getDescriptorValue(Conf.Descriptors.TemplateName, String.class);
+                if(etpn == null || !etpn.equals(tpltName)){continue;}
+
+                rtrn = (IDocument) tplt;
+                break;
+            }
+            if(rtrn != null){break;}
+        }
+        if(rtrn != null && server != null && session != null) {
+            rtrn = server.getDocumentCurrentVersion(session, rtrn.getID());
+        }
+        return rtrn;
+    }
+    /*static IInformationObject getProjectWorkspaceOld(String prjn, ProcessHelper helper) {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.ProjectWorkspace).append("'")
                 .append(" AND ")
@@ -304,7 +371,7 @@ public class Utils {
         IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , 1);
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
-    }
+    }*/
     static JSONObject getWorkbasket(ISession ses, IDocumentServer srv, String userID, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = getWorkbasketMatrix(ses, srv);
@@ -553,7 +620,8 @@ public class Utils {
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        return helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause, 0);
+        //return helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause, 0);
+        return helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , "", 1, false);
     }
     public static void saveFileContent(String path, String cntn) throws IOException {
         FileOutputStream outputStream = new FileOutputStream(path);

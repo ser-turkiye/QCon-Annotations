@@ -29,6 +29,9 @@ public class AnnotationTable extends UnifiedAgent {
     ISession ses;
     IDocumentServer server;
     private  IDocument mainDocument;
+    IDocument CRSTemplate = null;
+    JSONObject projects = new JSONObject();
+    String prjCode = "";
     private ITask mainTask;
     @Override
     protected Object execute() {
@@ -37,8 +40,8 @@ public class AnnotationTable extends UnifiedAgent {
             ses = getSes();
             server = ses.getDocumentServer();
             this.helper = new ProcessHelper(getSes());
-
             if(getEventTask() == null) return resultError("OBJECT CLIENT ID is NULL or not of type ITask");
+            prjCode = this.getEventTask().getDescriptorValue("ccmPRJCard_code");
             log.info("---- agent Started ----");
             IInformationObject informationObject = getEventTask().getProcessInstance().getMainInformationObject();
             if(!(informationObject instanceof IDocument)) return resultError("Main Information Object is not IDocument");
@@ -68,11 +71,20 @@ public class AnnotationTable extends UnifiedAgent {
             String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Generate_CRS[" + uniqueId + "]";
             (new File(exportPath)).mkdir();
 
-            String prjCode = this.getEventTask().getDescriptorValue("ccmPRJCard_code");
             String ctpn = "GENERATE_CRS_FROM_EXCEL";
-            IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
-            if(ctpl != null){
-                String templatePath = Utils.exportDocument(ctpl, exportPath, ctpn);
+            helper = new ProcessHelper(getSes());
+            projects = Utils.getProjectWorkspaces(helper);
+            CRSTemplate = null;
+
+            for(String prjn : projects.keySet()){
+                IInformationObject prjt = (IInformationObject) projects.get(prjn);
+                IDocument dtpl = Utils.getTemplateDocument(prjt, ctpn);
+                if(dtpl == null){continue;}
+                CRSTemplate = dtpl;
+            }
+            //IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
+            if(CRSTemplate != null){
+                String templatePath = Utils.exportDocument(CRSTemplate, exportPath, ctpn);
                 String xlsxPath = loadStampExcel(templatePath, exportPath + "/Generate_CRS.xlsx", bookmarks);
                 //String mailHtmlPath = Utils.convertExcelToHtml(tpltSavePath, mainPath + "/result[" + uniqueId + "].html");
                 String mailPdfPath = Utils.convertExcelToPdf(xlsxPath, exportPath + "/Generate_CRS.pdf");
@@ -145,7 +157,6 @@ public class AnnotationTable extends UnifiedAgent {
         if (cls == null) throw new Exception("Document Class: " + archiveClassID + " not found");
 
         String dbName = ses.getDatabase(cls.getDefaultDatabaseID()).getDatabaseName();
-
         IDocument doc = server.getClassFactory().getDocumentInstance(dbName, cls.getID(), "0000", ses);
 
         File file = new File(filePath);
@@ -249,7 +260,7 @@ public class AnnotationTable extends UnifiedAgent {
                 row[1] = getTextOrType(overlay);
                 prjbookmarks.put("desc" + (cnt1 > 9 ? cnt1 : "0" + cnt1) , row[1]);
                 //Company
-                row[2] = "QCon";
+                row[2] = prjCode;
                 prjbookmarks.put("comp" + (cnt1 > 9 ? cnt1 : "0" + cnt1) , row[2]);
                 //Discipline
                 row[3] = overlay.getCreatingUser();
@@ -572,32 +583,13 @@ public class AnnotationTable extends UnifiedAgent {
         builder.append(" AND ").append(Conf.DescriptorLiterals.MainDocumentID).append(" = '").append(mainDocID).append("'");
         String whereClause = builder.toString();
         log.info("Where Clause: " + whereClause);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
+        //IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 0, false);
         if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
         ITask[] newArr = new ITask[informationObjects.length];
         for(int i=0 ; i < informationObjects.length ; i++){
             newArr[i] = (ITask) informationObjects[i];
         }
         return newArr;
-    }
-    private ITask getMainTask(IDocument doc) throws Exception {
-        StringBuilder builder = new StringBuilder();
-        if(doc.getClassID() == Conf.ClassIDs.EngineeringCopy){
-            builder.append("TYPE = '").append(Conf.ClassIDs.ReviewSubProcess).append("'");
-            builder.append(" AND WFL_TASK_NAME = '").append(Conf.Tasks.SubProcessFirstTask).append("'")
-                    .append(" AND ")
-                    .append(Conf.DescriptorLiterals.SubDocumentID).append(" = '").append(doc.getID()).append("'");
-        }else{
-            builder.append("TYPE = '").append(Conf.ClassIDs.MainReviewProcess).append("'");
-            builder.append(" AND WFL_TASK_NAME = '").append(Conf.Tasks.MainProcessFirstTask).append("'")
-                    .append(" AND ")
-                    .append(Conf.DescriptorLiterals.MainDocumentID).append(" = '").append(doc.getID()).append("'");
-        }
-        String whereClause = builder.toString();
-        log.info("Where Clause: " + whereClause);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
-        if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
-        if(informationObjects.length > 1) throw new Exception("Multiple hits found for query: " + whereClause);
-        return (ITask) informationObjects[0];
     }
 }

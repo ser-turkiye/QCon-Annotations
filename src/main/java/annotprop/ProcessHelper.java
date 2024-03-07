@@ -100,7 +100,7 @@ public class ProcessHelper {
         return true;
     }
 
-    public IInformationObject[] createQuery(String[] dbNames , String whereClause , int maxHits){
+    public IInformationObject[] createQuery1(String[] dbNames , String whereClause , int maxHits){
         String[] databaseNames = dbNames;
 
         ISerClassFactory fac = documentServer.getClassFactory();
@@ -112,6 +112,33 @@ public class ProcessHelper {
         que.setMaxHits(maxHits);
         que.setHitLimit(maxHits + 1);
         que.setHitLimitThreshold(maxHits + 1);
+        IDocumentHitList hits = que.getSession() != null? que.getSession().getDocumentServer().query(que, que.getSession()):null;
+        if(hits == null) return null;
+        else return hits.getInformationObjects();
+    }
+    public IInformationObject[] createQuery(String[] dbNames, String whereClause, String order, int maxHits, boolean lver){
+        String[] databaseNames = dbNames;
+
+        ISerClassFactory fac = documentServer.getClassFactory();
+        IQueryParameter que = fac.getQueryParameterInstance(
+                session ,
+                databaseNames ,
+                fac.getExpressionInstance(whereClause) ,
+                null,null);
+
+        if(lver){que.setCurrentVersionOnly(true);}
+
+        if(maxHits > 0) {
+            que.setMaxHits(maxHits);
+            que.setHitLimit(maxHits + 1);
+            que.setHitLimitThreshold(maxHits + 1);
+        }
+        if(!order.isEmpty()){
+            IOrderByExpression oexr = fac.getOrderByExpressionInstance(
+                    session.getDocumentServer().getInternalDescriptor(session, order), true);
+            que.setOrderByExpression(oexr);
+        }
+
         IDocumentHitList hits = que.getSession() != null? que.getSession().getDocumentServer().query(que, que.getSession()):null;
         if(hits == null) return null;
         else return hits.getInformationObjects();

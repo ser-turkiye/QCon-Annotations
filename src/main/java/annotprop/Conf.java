@@ -32,6 +32,7 @@ public class Conf {
         public static final String DocNumber = "ccmPrjDocNumber";
         public static final String Revision = "ccmPrjDocRevision";
         public static final String ObjectNumber = "ObjectNumber";
+        public static final String TemplateName = "ObjectNumberExternal";
     }
     public static class CancelProcess {
         public static final String MainPath = "C:/tmp2/bulk/cancelprocess";
@@ -73,7 +74,10 @@ public class Conf {
         public static final String PRJUsersRole = "Project Users";
     }
 
-
+    public static class MailTemplates{
+        public static final String Project = "MAIL_WORKBASKET_LIST";
+        public static final String CancelProcess = "PROCESS_CANCEL_MAIL";
+    }
     public static class DocReview {
         public static final String WebBase = "http://localhost/webcube/";
     }

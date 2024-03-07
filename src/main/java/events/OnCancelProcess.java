@@ -34,6 +34,8 @@ public class OnCancelProcess extends UnifiedAgent {
     IBpmService bpm;
     private ProcessHelper helper;
     public Utils utils;
+    IDocument mailTemplate = null;
+    JSONObject projects = new JSONObject();
 
     @Override
     protected Object execute() {
@@ -78,12 +80,22 @@ public class OnCancelProcess extends UnifiedAgent {
             dbks.put("Title", mainDocument.getDisplayName());
             dbks.put("Task", mainTask.getName());
 
-            IDocument mtpl = Utils.getTemplateDocument(prjn, mtpn, helper);
-            if(mtpl == null){
+            projects = Utils.getProjectWorkspaces(this.helper);
+            mailTemplate = null;
+
+            for(String prjnmbr : projects.keySet()){
+                IInformationObject prjt = (IInformationObject) projects.get(prjnmbr);
+                IDocument dtpl = Utils.getTemplateDocument(prjt, Conf.MailTemplates.CancelProcess);
+                if(dtpl == null){continue;}
+                mailTemplate = dtpl;
+            }
+            //if(mailTemplate == null){throw new Exception("Mail template not found.");}
+            //IDocument mtpl = Utils.getTemplateDocument(prjn, mtpn, helper);
+            if(mailTemplate == null){
                 log.info("Template-Document [ " + mtpn + " ] not found.");
                 //throw new Exception("Template-Document [ " + mtpn + " ] not found.");
             }else {
-                String tplMailPath = Utils.exportDocument(mtpl, Conf.CancelProcess.MainPath, mtpn + "[" + uniqueId + "]");
+                String tplMailPath = Utils.exportDocument(mailTemplate, Conf.CancelProcess.MainPath, mtpn + "[" + uniqueId + "]");
                 String mailExcelPath = Utils.saveDocReviewExcel(tplMailPath, Conf.CancelProcessSheetIndex.Mail,
                         Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].xlsx", dbks
                 );
@@ -124,7 +136,9 @@ public class OnCancelProcess extends UnifiedAgent {
                 .append(" = '")
                 .append(projectNumber).append("'");
         log.info("Attemptign Query");
-        IInformationObject[] objects = createQuery(Constants.Literals.ProjectFolderDB , whereClause.toString() , 2);
+        //IInformationObject[] objects = createQuery(Constants.Literals.ProjectFolderDB , whereClause.toString() , 2);
+        IInformationObject[] objects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause.toString() , "", 1, false);;
+
         if(objects == null) throw new Exception("Not Folder with: " + projectNumber + " was found");
         if(objects.length < 1)throw new Exception("Not Folder with: " + projectNumber + " was found");
         return (IFolder) objects[0];
@@ -136,7 +150,8 @@ public class OnCancelProcess extends UnifiedAgent {
         builder.append(" AND ").append(Conf.DescriptorLiterals.MainDocumentID).append(" = '").append(mainDocID).append("'");
         String whereClause = builder.toString();
         log.info("Where Clause: " + whereClause);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
+        //IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 2, false);
         //if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
         ITask[] newArr = new ITask[informationObjects.length];
         for(int i=0 ; i < informationObjects.length ; i++){
@@ -144,23 +159,6 @@ public class OnCancelProcess extends UnifiedAgent {
         }
         return newArr;
     }
-    private IInformationObject[] createQuery(String dbName , String whereClause , int maxHits){
-        String[] databaseNames = {dbName};
-
-        ISerClassFactory fac = getDocumentServer().getClassFactory();
-        IQueryParameter que = fac.getQueryParameterInstance(
-                getSes() ,
-                databaseNames ,
-                fac.getExpressionInstance(whereClause) ,
-                null,null);
-        que.setMaxHits(maxHits);
-        que.setHitLimit(maxHits + 1);
-        que.setHitLimitThreshold(maxHits + 1);
-        IDocumentHitList hits = que.getSession() != null? que.getSession().getDocumentServer().query(que, que.getSession()):null;
-        if(hits == null) return null;
-        else return hits.getInformationObjects();
-    }
-
     public static INode getNode(IFolder fold, String fldn){
         List<INode> nodesByName = fold.getNodesByName(fldn);
         return fold.getNodeByID(nodesByName.get(0).getID());

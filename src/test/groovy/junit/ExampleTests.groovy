@@ -33,7 +33,7 @@ class ExampleTests {
         //def agent = new OnSubTaskComplete();
         //def agent = new OnNewAnnotation();
         //def agent = new OnNewBulkReview();
-        def agent = new AnnotationTable();
+        //def agent = new AnnotationTable();
         //def agent = new GenerateStamp();
         //def agent = new OnChangeAnnotation();
         //def agent = new OnChangeDiscipline();
@@ -41,7 +41,7 @@ class ExampleTests {
         //def agent = new OnChangeProjectCard();
         //def agent = new OnUpdateEmployee();
         //def agent = new OnCreateDCCExcel();
-        //def agent = new OnCancelProcess();
+        def agent = new OnCancelProcess();
         //def agent = new TestTaskRemove();
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24166dbdc8-1c1e-4326-877b-8371ad181a64182023-10-11T11:27:58.673Z010"
@@ -59,7 +59,7 @@ class ExampleTests {
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM247fdcd280-f11f-428e-9463-65bac3d4e814182023-12-29T16:11:18.769Z010" //on bulk review
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24bd6415d7-d01c-481a-bfb4-d261ca69b7b7182024-02-06T12:03:22.351Z013" //anotation table
+        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM243dfee922-4457-49ce-a1f4-2e072551cbff182024-03-07T09:05:37.131Z013" //anotation table
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24c131ba10-5919-4918-8c82-f83a7678c2a2182023-11-15T13:28:46.751Z013" //anotation table
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24505ce08a-d51a-4199-b9b3-edbb0afb049c182023-12-06T06:21:33.921Z013" //anotation table
 
@@ -78,7 +78,7 @@ class ExampleTests {
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SR0aF_EMPLOYEE24335684f3-cf16-4571-8dba-0a78aa1ff8e7182023-12-01T12:45:05.040Z011"  //change employee file
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24f4806a58-db22-4201-91f9-2c78eeb0e31d182023-11-08T10:33:33.870Z013" //convert2pdf
-        //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM248d532701-30ec-4404-a98e-3e49a892797a182023-12-14T08:46:06.928Z013" //cancelProcess
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2477ecad6f-2f1a-4e58-a0f5-795f02b40a75182024-03-07T15:42:03.839Z016" //cancelProcess
 
         //binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2413d2c0cc-84a3-4d9e-8d1b-4b6806074790182023-11-19T16:33:32.237Z012" //removeTask
 

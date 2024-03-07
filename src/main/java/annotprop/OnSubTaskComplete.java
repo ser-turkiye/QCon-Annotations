@@ -90,7 +90,8 @@ public class OnSubTaskComplete extends UnifiedAgent {
                 .append(Conf.Descriptors.MainTaskID).append(" = '").append(mainDocID).append("'");
         String whereClause = builder.toString();
         log.info("Where Clause: " + whereClause);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
+        //IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 2, false);
         if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
         if(informationObjects.length > 1) throw new Exception("Multiple hits found for query: " + whereClause);
         return (ITask) informationObjects[0];

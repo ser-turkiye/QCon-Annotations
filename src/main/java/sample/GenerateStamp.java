@@ -9,12 +9,7 @@ import annotprop.Conf;
 import annotprop.Utils;
 import annotprop.ProcessHelper;
 
-import com.ser.blueline.IDocument;
-import com.ser.blueline.IInformationObject;
-import com.ser.blueline.IOverlay;
-import com.ser.blueline.IOverlayLayer;
-import com.ser.blueline.ISerClassFactory;
-import com.ser.blueline.IStampOverlay;
+import com.ser.blueline.*;
 import com.ser.blueline.bpm.ITask;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 
@@ -50,20 +45,28 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.UUID;
 
-import static java.lang.System.out;
-
 public class GenerateStamp extends UnifiedAgent {
     private Logger log = LogManager.getLogger();
-
+    private ProcessHelper helper;
+    ISession ses;
+    IDocumentServer server;
+    IDocument stampTemplate = null;
+    String ctpn = "";
+    JSONObject projects = new JSONObject();
+    String prjCode = "";
     public GenerateStamp() {
     }
 
     protected Object execute() {
         try {
+            com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
+            ses = getSes();
+            server = ses.getDocumentServer();
+            this.helper = new ProcessHelper(getSes());
+
             IInformationObject obj = this.getEventTask().getProcessInstance().getMainInformationObject();
             IDocument doc = this.getDocumentServer().getDocument4ID(obj.getID(), this.getSes());
             ISerClassFactory fac = this.getDocumentServer().getClassFactory();
-            ProcessHelper helper = new ProcessHelper(getSes());
             IOverlay newAnnotation = fac.getOverlayInstance(6);
             IStampOverlay stampAnnot = (IStampOverlay)newAnnotation;
 
@@ -91,9 +94,18 @@ public class GenerateStamp extends UnifiedAgent {
             this.log.info("Consalidator Completed By: " + completedBy);
 
             if(!Objects.equals(isEnableStamp, "false") && isEnableStamp!=null) {
-                String ctpn = "REVIEW_STAMP_TEMPLATE";
-                IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
-                if (ctpl != null) {
+                ctpn = "REVIEW_STAMP_TEMPLATE";
+                helper = new ProcessHelper(getSes());
+                projects = Utils.getProjectWorkspaces(helper);
+                stampTemplate = null;
+                for(String prjn : projects.keySet()){
+                    IInformationObject prjt = (IInformationObject) projects.get(prjn);
+                    IDocument dtpl = Utils.getTemplateDocument(prjt, ctpn);
+                    if(dtpl == null){continue;}
+                    stampTemplate = dtpl;
+                }
+                //IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
+                if (stampTemplate != null) {
                     byte[] stamp = this.generateImage(220, 120, decisionCode, completedBy, prjCode);
                     stampAnnot.setImageData(stamp);
                     Point pt = new Point(100, 10);
@@ -104,13 +116,6 @@ public class GenerateStamp extends UnifiedAgent {
                     doc.commit();
                 }
             }
-
-            /*ApproveCode set etme islemi UpdateWFTask agent a alındı
-            IDocument mainDoc = (IDocument) this.getEventTask().getProcessInstance().getMainInformationObject();
-            mainDoc.setDescriptorValue("ccmPrjDocApprCode",decisionCode);
-            mainDoc.commit();
-            */
-
         } catch (Exception var13) {
             this.log.info(var13.getMessage());
             return this.resultError(var13.getMessage());
@@ -120,28 +125,16 @@ public class GenerateStamp extends UnifiedAgent {
     }
 
     public byte[] generateImage(int width, int height, String decisionCode, String userName, String prjCode) throws Exception {
-        JSONObject scfg = Utils.getSystemConfig(getSes(),null);
-        if(scfg.has("LICS.SPIRE_XLS")){
-            com.spire.license.LicenseProvider.setLicenseKey(scfg.getString("LICS.SPIRE_XLS"));
-        }
-
-        ProcessHelper helper = new ProcessHelper(getSes());
         (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
 
         String uniqueId = UUID.randomUUID().toString();
         String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Review_Stamp[" + uniqueId + "]";
         (new File(exportPath)).mkdir();
 
-        String ctpn = "REVIEW_STAMP_TEMPLATE";
-        IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
-        if(ctpl == null){
-            throw new Exception("Template-Document [ " + ctpn + " ] not found.");
-        }
-
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         Date date = new Date();
 
-        String templatePath = Utils.exportDocument(ctpl, exportPath, ctpn);
+        String templatePath = Utils.exportDocument(stampTemplate, exportPath, ctpn);
         JSONObject bookmarks = new JSONObject();
         bookmarks.put("code", decisionCode);
         bookmarks.put("fullname", userName);
