@@ -52,7 +52,12 @@ public class OnSubTaskComplete extends UnifiedAgent {
                 log.info("All Reviewers have completed");
                 //(Get Task to the next step)
                 if(!(mainTask.getCode().equals("waitforapproval"))) return resultError("Main Task is not at correct task");
-                moveCurrentTaskToNext(mainTask);
+                try {
+                    moveCurrentTaskToNext(mainTask);
+                }catch (Exception e){
+                    log.error("Move Current Task exception. Restarting...: " + e);
+                    return resultRestart("Restarting Agent");
+                }
             }else{
                 log.info("Pending for more reveiwers");
                 mainTask.setDescriptorValue("TotalReviewed" , ""+totalReviewers);
