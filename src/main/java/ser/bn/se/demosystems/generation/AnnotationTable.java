@@ -67,6 +67,7 @@ public class AnnotationTable extends UnifiedAgent {
                 bookmarks.put(docBkmrk.getKey(), dscpName);
             }
 
+            String prjn = this.getEventTask().getDescriptorValue("ccmPRJCard_code");
             String uniqueId = UUID.randomUUID().toString();
             String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Generate_CRS[" + uniqueId + "]";
             (new File(exportPath)).mkdir();
@@ -76,12 +77,10 @@ public class AnnotationTable extends UnifiedAgent {
             projects = Utils.getProjectWorkspaces(helper);
             CRSTemplate = null;
 
-            for(String prjn : projects.keySet()){
-                IInformationObject prjt = (IInformationObject) projects.get(prjn);
-                IDocument dtpl = Utils.getTemplateDocument(prjt, ctpn);
-                if(dtpl == null){continue;}
-                CRSTemplate = dtpl;
-            }
+            IInformationObject prjt = (IInformationObject) projects.get(prjn);
+            IDocument dtpl = Utils.getTemplateDocument(prjt, ctpn);
+            CRSTemplate = dtpl;
+
             //IDocument ctpl = Utils.getTemplateDocument(prjCode, ctpn, helper);
             if(CRSTemplate != null){
                 String templatePath = Utils.exportDocument(CRSTemplate, exportPath, ctpn);
