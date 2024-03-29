@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 public class AnnotationTable extends UnifiedAgent {
     private static Logger log = LogManager.getLogger();
     private ProcessHelper helper;
-    ISession ses;
-    IDocumentServer server;
+    //ISession ses;
+    //IDocumentServer server;
     private  IDocument mainDocument;
     IDocument CRSTemplate = null;
     JSONObject projects = new JSONObject();
@@ -37,9 +37,14 @@ public class AnnotationTable extends UnifiedAgent {
     protected Object execute() {
         try {
             com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
-            ses = getSes();
-            server = ses.getDocumentServer();
-            this.helper = new ProcessHelper(getSes());
+
+            Utils.session = getSes();
+            Utils.bpm = getBpm();
+            Utils.server = Utils.session.getDocumentServer();
+
+            //ses = getSes();
+            //server = ses.getDocumentServer();
+            this.helper = new ProcessHelper(Utils.session);
             if(getEventTask() == null) return resultError("OBJECT CLIENT ID is NULL or not of type ITask");
             prjCode = this.getEventTask().getDescriptorValue("ccmPRJCard_code");
             log.info("---- agent Started ----");
@@ -73,7 +78,7 @@ public class AnnotationTable extends UnifiedAgent {
             (new File(exportPath)).mkdir();
 
             String ctpn = "GENERATE_CRS_FROM_EXCEL";
-            helper = new ProcessHelper(getSes());
+            helper = new ProcessHelper(Utils.session);
             projects = Utils.getProjectWorkspaces(helper);
             CRSTemplate = null;
 
@@ -134,14 +139,14 @@ public class AnnotationTable extends UnifiedAgent {
         return rtrn.toString();
     }
     private void archiveNewTemplate(String tpltSavePath, String pdfPath) throws Exception {
-        FilingHelper filingHelper = new FilingHelper(getSes());
+        FilingHelper filingHelper = new FilingHelper(Utils.session);
         IDocument doc = newFileToDocumentClass(tpltSavePath, pdfPath, Constants.ClassIDs.CRSProjDocumentArchive);
         filingHelper.mapDescriptorsFromObjectToObject(getEventTask() , doc , true);
         doc.setDescriptorValue("ccmFileName" , "Comment Resolution Sheet.xlsx");
         doc.setDescriptorValue("ccmPrjDocDocType" , "CRS");
         //doc.setDescriptorValue("ObjectName2" , "Comment Resolution Sheet");
         doc.setDescriptorValue("ccmReferenceNumber" , getEventTask().getProcessInstance().getMainInformationObjectID());
-        CounterHelper counterHelper = new CounterHelper(getSes() , doc.getClassID());
+        CounterHelper counterHelper = new CounterHelper(Utils.session , doc.getClassID());
         String counterStr = counterHelper.getCounterStr();
         String paddedNo = String.format("%5s", counterStr).replace(' ', '0');
         doc.setDescriptorValue("ObjectNumber" , "CRS_" + paddedNo);
@@ -151,12 +156,12 @@ public class AnnotationTable extends UnifiedAgent {
         getEventTask().commit();
     }
     public IDocument newFileToDocumentClass(String filePath, String filePathPDF, String archiveClassID) throws Exception {
-        IArchiveClass cls = server.getArchiveClass(archiveClassID, ses);
-        if (cls == null) cls = server.getArchiveClassByName(ses, archiveClassID);
+        IArchiveClass cls = Utils.server.getArchiveClass(archiveClassID, Utils.session);
+        if (cls == null) cls = Utils.server.getArchiveClassByName(Utils.session, archiveClassID);
         if (cls == null) throw new Exception("Document Class: " + archiveClassID + " not found");
 
-        String dbName = ses.getDatabase(cls.getDefaultDatabaseID()).getDatabaseName();
-        IDocument doc = server.getClassFactory().getDocumentInstance(dbName, cls.getID(), "0000", ses);
+        String dbName = Utils.session.getDatabase(cls.getDefaultDatabaseID()).getDatabaseName();
+        IDocument doc = Utils.server.getClassFactory().getDocumentInstance(dbName, cls.getID(), "0000", Utils.session);
 
         File file = new File(filePath);
         IRepresentation representation = doc.addRepresentation(".xlsx" , "Signed document");
@@ -342,7 +347,7 @@ public class AnnotationTable extends UnifiedAgent {
                 IInformationObject subProcessObject = pi.getMainInformationObject();
                 if(subProcessObject == null) continue;
                 if(!(subProcessObject instanceof  IDocument)) continue;
-                mainDocument = getDocumentServer().getDocument4ID(mainDocID , getSes());
+                mainDocument = Utils.server.getDocument4ID(mainDocID , Utils.session);
                 IDocument subDocument = (IDocument) subProcessObject;
                 if (!Objects.equals(subDocument.getID(), eventDoc.getID())) {
                     copyOnlyDiffentLays(mainDocument, subDocument);
