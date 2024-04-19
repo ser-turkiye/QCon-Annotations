@@ -14,12 +14,10 @@ import ser.bn.se.demosystems.documents.Constants;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.UUID;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.lang.StringBuilder;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONObject;
 import ser.bn.se.demosystems.documents.CounterHelper;
@@ -74,11 +72,56 @@ public class OnCancelProcess extends UnifiedAgent {
             processInstance.setDescriptorValue("ccmCrrsStatus","Cancelled");
             processInstance.commit();
 
+
+            Date tbgn = null, tend = new Date();
+            if(mainTask.getReadyDate() != null){
+                tbgn = mainTask.getReadyDate();
+            }
+            long durd  = 0L;
+            double durh  = 0.0;
+            if(tend != null && tbgn != null) {
+                long diff = (tend.getTime() > tbgn.getTime() ? tend.getTime() - tbgn.getTime() : tbgn.getTime() - tend.getTime());
+                durd = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+                durh = ((TimeUnit.MINUTES.convert(diff, TimeUnit.MILLISECONDS) - (durd * 24 * 60)) * 100 / 60) / 100d;
+            }
+            String rcvf = "", rcvo = "";
+            if(mainTask.getPreviousWorkbasket() != null){
+                rcvf = mainTask.getPreviousWorkbasket().getFullName();
+            }
+            if(tbgn != null){
+                rcvo = (new SimpleDateFormat("dd-MM-yyyy HH:mm")).format(tbgn);
+            }
+            String mdno = "", mdrn = "", mdnm = "";
+            if(mainDocument != null &&  Utils.hasDescriptor((IInformationObject) mainDocument, Conf.Descriptors.ProjectNo)){
+                prjn = mainDocument.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+            }
+            if(mainDocument != null &&  Utils.hasDescriptor((IInformationObject) mainDocument, Conf.Descriptors.DocNumber)){
+                mdno = mainDocument.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
+            }
+            if(mainDocument != null &&  Utils.hasDescriptor((IInformationObject) mainDocument, Conf.Descriptors.Revision)){
+                mdrn = mainDocument.getDescriptorValue(Conf.Descriptors.Revision, String.class);
+            }
+            if(mainDocument != null &&  Utils.hasDescriptor((IInformationObject) mainDocument, Conf.Descriptors.Name)){
+                mdnm = mainDocument.getDescriptorValue(Conf.Descriptors.Name, String.class);
+            }
+
+            Long prevTaskID = this.getEventTask().getPreviousTaskNumericID();
+            ITask prevTask = this.getEventTask().getProcessInstance().findTaskByNumericID(this.getEventTask().getPreviousTaskNumericID());
+            log.info("Previev task name :" + (prevTask != null ? prevTask.getName() : "---"));
+
             String mtpn = "PROCESS_CANCEL_MAIL";
             JSONObject dbks = new JSONObject();
             dbks.put("DoxisLink", Conf.CancelProcess.WebBase + helper.getTaskURL(processInstance.getID()));
             dbks.put("Title", mainDocument.getDisplayName());
-            dbks.put("Task", mainTask.getName());
+            //dbks.put("Task", mainTask.getName());
+            dbks.put("Task", (prevTask != null ? prevTask.getName() : mainTask.getName()));
+
+            dbks.put("ProcessTitle", (processInstance != null ? processInstance.getDisplayName() : ""));
+            dbks.put("ProjectNo", (prjn != null  ? prjn : ""));
+            dbks.put("DocNo", (mdno != null  ? mdno : ""));
+            dbks.put("RevNo", (mdrn != null  ? mdrn : ""));
+            dbks.put("DocName", (mdnm != null  ? mdnm : ""));
+            dbks.put("ReceivedOn", (rcvo != null ? rcvo : ""));
 
             projects = Utils.getProjectWorkspaces(this.helper);
             mailTemplate = null;
@@ -88,6 +131,7 @@ public class OnCancelProcess extends UnifiedAgent {
                 IDocument dtpl = Utils.getTemplateDocument(prjt, Conf.MailTemplates.CancelProcess);
                 if(dtpl == null){continue;}
                 mailTemplate = dtpl;
+                break;
             }
             //if(mailTemplate == null){throw new Exception("Mail template not found.");}
             //IDocument mtpl = Utils.getTemplateDocument(prjn, mtpn, helper);
@@ -108,7 +152,7 @@ public class OnCancelProcess extends UnifiedAgent {
                     mails.add(umail);
                     JSONObject mail = new JSONObject();
                     mail.put("To", String.join(";", mails));
-                    mail.put("Subject", "Cancelled Process");
+                    mail.put("Subject", "Process Cancelled -" + (prevTask != null ? prevTask.getName() : "") + " - " + (mdno != null  ? mdno : "") + "/" + (mdrn != null  ? mdrn : ""));
                     mail.put("BodyHTMLFile", mailHtmlPath);
                     Utils.sendHTMLMail(ses, srv, "CCM_MAIL_CONFIG", mail);
                 } else {
