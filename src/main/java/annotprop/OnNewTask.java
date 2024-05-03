@@ -80,13 +80,27 @@ public class OnNewTask extends UnifiedAgent {
             helper.mapDescriptorsFromObjectToObject(mainDocument , copyDoc , true);
             copyDoc.commit();
             getDocumentServer().copyDocument2(getSes() , mainDocument , copyDoc,
-                   CopyScope.COPY_PART_DOCUMENTS , CopyScope.COPY_OVERLAYS );
+                   CopyScope.COPY_PART_DOCUMENTS , CopyScope.COPY_OVERLAYS);
 
             copyDoc.setDescriptorValue(Conf.Descriptors.MainDocumentID , mainDocument.getID());
             copyDoc.setDescriptorValue(Conf.Descriptors.SubDocumentID , copyDoc.getID());
             copyDoc.setDescriptorValue(Conf.Descriptors.LayerName, layerName);
 
             copyDoc.commit();
+
+            log.info("start linked for copydoc : " + copyDoc.getID());
+
+            ILink[] links = getDocumentServer().getReferencedRelationships(getSes(), mainDocument, false, false);
+            for (ILink link : links) {
+                IInformationObject xdoc = link.getTargetInformationObject();
+                String docInfo = xdoc.getDisplayName();
+                log.info("start linked doc : " + docInfo);
+                log.info("start linked docID : " + xdoc.getID());
+                ILink lnk2 = getDocumentServer().createLink(getSes(), copyDoc.getID(), null, xdoc.getID());
+                lnk2.commit();
+                //Utils.server.removeRelationship(Utils.session, link);
+                log.info("linked doc to copydoc");
+            }
         } catch (Exception e) {
             log.info("Exeption Caught..createNewDocumentCopy: " + e);
         }
