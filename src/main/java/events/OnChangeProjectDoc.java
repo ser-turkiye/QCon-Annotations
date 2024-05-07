@@ -65,7 +65,7 @@ public class OnChangeProjectDoc extends UnifiedAgent {
                         log.info("Committed Eng Document ID:" + mainDocument.getDescriptorValue("DocID"));
                     } catch (Exception e){
                         log.info("Exception Caught.. commit error:" + e);
-                        resultRestart("OnChangeProjectDoc error. Restarting agent...");
+                        return resultRestart("OnChangeProjectDoc error. Restarting agent...");
                     }
 
                     IFolder prjFolder = this.getProjectFolder();
