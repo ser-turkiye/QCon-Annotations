@@ -61,7 +61,7 @@ public class OnNewBulkReview extends UnifiedAgent {
                 log.info("Attempting Commit");
                 pi.commit();
 
-                log.info("start linked for copydoc : " + pi.getID());
+                log.info("start linked for main process : " + pi.getID());
 
                 ILink[] links = getDocumentServer().getReferencedRelationships(getSes(), mainDocument, false, false);
                 for (ILink link : links) {
@@ -76,6 +76,7 @@ public class OnNewBulkReview extends UnifiedAgent {
                     //Utils.server.removeRelationship(Utils.session, link);
                     log.info("linked doc to main process");
                 }
+                log.info("finish linked for main process : " + pi.getID());
             }
         } catch (Exception e) {
             throw new Exception("Exeption Caught..createNewMainProcess: " + e);
