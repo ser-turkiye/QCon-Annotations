@@ -60,6 +60,22 @@ public class OnNewBulkReview extends UnifiedAgent {
                 pi.setMainInformationObjectID(mainDocument.getID());
                 log.info("Attempting Commit");
                 pi.commit();
+
+                log.info("start linked for copydoc : " + pi.getID());
+
+                ILink[] links = getDocumentServer().getReferencedRelationships(getSes(), mainDocument, false, false);
+                for (ILink link : links) {
+                    IInformationObject xdoc = link.getTargetInformationObject();
+                    String docInfo = xdoc.getDisplayName();
+                    String docClassID = xdoc.getClassID();
+                    InformationObjectType objType = xdoc.getInformationObjectType();
+                    log.info("start linked doc : " + docInfo);
+                    log.info("start linked docID : " + xdoc.getID());
+                    ILink lnk2 = getDocumentServer().createLink(getSes(), pi.getID(), null, xdoc.getID());
+                    lnk2.commit();
+                    //Utils.server.removeRelationship(Utils.session, link);
+                    log.info("linked doc to main process");
+                }
             }
         } catch (Exception e) {
             throw new Exception("Exeption Caught..createNewMainProcess: " + e);

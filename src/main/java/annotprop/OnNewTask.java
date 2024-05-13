@@ -23,6 +23,7 @@ public class OnNewTask extends UnifiedAgent {
     private ITask mainTask;
 
 
+
     @Override
     protected Object execute() {
         //(1) Make sure we have a main document
@@ -114,10 +115,14 @@ public class OnNewTask extends UnifiedAgent {
 
             log.info("start linked for copydoc : " + pi.getID());
 
+
             ILink[] links = getDocumentServer().getReferencedRelationships(getSes(), mainDocument, false, false);
             for (ILink link : links) {
                 IInformationObject xdoc = link.getTargetInformationObject();
                 String docInfo = xdoc.getDisplayName();
+                String docClassID = xdoc.getClassID();
+                InformationObjectType objType = xdoc.getInformationObjectType();
+                log.info("linked usage object type : " + objType);
                 log.info("start linked doc : " + docInfo);
                 log.info("start linked docID : " + xdoc.getID());
                 ILink lnk2 = getDocumentServer().createLink(getSes(), pi.getID(), null, xdoc.getID());
@@ -125,6 +130,7 @@ public class OnNewTask extends UnifiedAgent {
                 //Utils.server.removeRelationship(Utils.session, link);
                 log.info("linked doc to copydoc");
             }
+
         } catch (Exception e) {
             log.info("Exeption Caught..createNewTaskForWB: " + e);
         }
