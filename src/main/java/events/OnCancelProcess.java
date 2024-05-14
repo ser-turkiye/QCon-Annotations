@@ -133,6 +133,7 @@ public class OnCancelProcess extends UnifiedAgent {
                 mailTemplate = dtpl;
                 break;
             }
+            log.info("Mail template :" + (mailTemplate != null ? mailTemplate.getDisplayName() : "---"));
             //if(mailTemplate == null){throw new Exception("Mail template not found.");}
             //IDocument mtpl = Utils.getTemplateDocument(prjn, mtpn, helper);
             if(mailTemplate == null){
@@ -140,14 +141,16 @@ public class OnCancelProcess extends UnifiedAgent {
                 //throw new Exception("Template-Document [ " + mtpn + " ] not found.");
             }else {
                 String tplMailPath = Utils.exportDocument(mailTemplate, Conf.CancelProcess.MainPath, mtpn + "[" + uniqueId + "]");
+                log.info("Mail template export path:" + tplMailPath);
                 String mailExcelPath = Utils.saveDocReviewExcel(tplMailPath, Conf.CancelProcessSheetIndex.Mail,
                         Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].xlsx", dbks
                 );
+                log.info("Mail mailExcelPath :" + mailExcelPath);
                 String mailHtmlPath = Utils.convertExcelToHtml(mailExcelPath, Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].html");
-
+                log.info("Mail mailHtmlPath :" + mailHtmlPath);
                 String umail = processOwner.getEMailAddress();
+                log.info("Mail umail :" + umail);
                 List<String> mails = new ArrayList<>();
-
                 if (umail != null) {
                     mails.add(umail);
                     JSONObject mail = new JSONObject();
@@ -158,10 +161,12 @@ public class OnCancelProcess extends UnifiedAgent {
                 } else {
                     log.info("Mail adress is null :" + processOwner.getFullName());
                 }
+                log.info("Mail process finish");
             }
         } catch (Exception e) {
             log.error("Exception Caught");
             log.error(e.getMessage());
+            log.error(e.getLocalizedMessage());
             return resultError(e.getMessage());
         }
         return resultSuccess("Agent Finished Succesfully");

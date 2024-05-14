@@ -137,8 +137,9 @@ public class Utils {
         return String.join(";", rtrn);
     }
     public static void sendHTMLMail(ISession ses, IDocumentServer srv, String mtpn, JSONObject pars) throws Exception {
+        log.info("sendHTMLMail start");
         JSONObject mcfg = Utils.getMailConfig(ses, srv, mtpn);
-
+        log.info("sendHTMLMail mcfg : " + mcfg);
         String host = mcfg.getString("host");
         String port = mcfg.getString("port");
         String protocol = mcfg.getString("protocol");
@@ -203,7 +204,7 @@ public class Utils {
                 }
             };
         }
-
+        log.info("sendHTMLMail mailTo :" + mailTo);
         if(!Objects.equals(mailTo, "")) {
             Session session = (authenticator == null ? Session.getDefaultInstance(props) : Session.getDefaultInstance(props, authenticator));
 
@@ -239,9 +240,8 @@ public class Utils {
 
             message.setContent(multipart);
             Transport.send(message);
-        }else {
-
         }
+        log.info("sendHTMLMail finish");
     }
     static IStringMatrix getMailConfigMatrix(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
         //IStringMatrix rtrn = srv.getStringMatrix("MailConfig" + (!mtpn.isEmpty() ? "." + mtpn : ""), ses);
