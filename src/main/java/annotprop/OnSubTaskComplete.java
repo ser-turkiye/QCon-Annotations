@@ -2,10 +2,7 @@ package annotprop;
 
 import com.ser.blueline.IDocument;
 import com.ser.blueline.IInformationObject;
-import com.ser.blueline.bpm.IDecision;
-import com.ser.blueline.bpm.IPossibleDecision;
-import com.ser.blueline.bpm.IProcessInstance;
-import com.ser.blueline.bpm.ITask;
+import com.ser.blueline.bpm.*;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,7 +50,9 @@ public class OnSubTaskComplete extends UnifiedAgent {
                 //(Get Task to the next step)
                 if(!(mainTask.getCode().equals("waitforapproval"))) return resultError("Main Task is not at correct task");
                 try {
-                    moveCurrentTaskToNext(mainTask);
+                    if(mainTask.getStatus() != TaskStatus.COMPLETED) {
+                        moveCurrentTaskToNext(mainTask);
+                    }
                 }catch (Exception e){
                     log.error("Move Current Task exception. Restarting...: " + e);
                     return resultRestart("Restarting Agent");
@@ -84,6 +83,7 @@ public class OnSubTaskComplete extends UnifiedAgent {
                eventTask.complete(decision);
            }
         }
+
         eventTask.commit();
     }
 

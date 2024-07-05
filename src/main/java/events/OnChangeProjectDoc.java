@@ -36,24 +36,25 @@ public class OnChangeProjectDoc extends UnifiedAgent {
 
             if(!Objects.equals(mainDocument.getDescriptorValue("ccmPrjDocCategory"), "Correspondence")) {
 
-                Object chkDoc = checkDublicateEngDocByFileName(mainDocument);
-                if (chkDoc != null) {
-                    mainDocument.setDescriptorValue("ccmPrjDocFileName", "_DUBLICATED_" + mainDocument.getDescriptorValue("ccmPrjDocFileName"));
-                }
 
                 if (getEventName() != null && getEventName().equals("createDocument")) {
 
-                    mainDocument.setDescriptorValue("ccmPrjDocApprCode", "");
-                    mainDocument.setDescriptorValue("ccmPrjDocWFProcessName", "");
-                    mainDocument.setDescriptorValue("ccmPrjDocWFTaskName", "");
-                    mainDocument.setDescriptorValue("ccmPrjDocWFTaskRecipients", "");
-                    mainDocument.setDescriptorValue("ccmPrjDocTransIncCode", "");
-                    mainDocument.setDescriptorValue("ccmPrjDocTransOutCode", "");
+                    Object chkDoc = checkDublicateEngDocByFileName(mainDocument);
+                    if (chkDoc != null) {
+                        mainDocument.setDescriptorValue("ccmPrjDocFileName", "_DUBLICATED_" + mainDocument.getDescriptorValue("ccmPrjDocFileName"));
+                    }
 
-                    mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocWFTaskCreation"));
-                    // mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(),"ccmPrjDocDate"));
-                    mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocReqDate"));
-                    mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocDueDate"));
+//                    mainDocument.setDescriptorValue("ccmPrjDocApprCode", "");
+//                    mainDocument.setDescriptorValue("ccmPrjDocWFProcessName", "");
+//                    mainDocument.setDescriptorValue("ccmPrjDocWFTaskName", "");
+//                    mainDocument.setDescriptorValue("ccmPrjDocWFTaskRecipients", "");
+//                    mainDocument.setDescriptorValue("ccmPrjDocTransIncCode", "");
+//                    mainDocument.setDescriptorValue("ccmPrjDocTransOutCode", "");
+
+//                    mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocWFTaskCreation"));
+//                    // mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(),"ccmPrjDocDate"));
+//                    mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocReqDate"));
+//                    mainDocument.removeDescriptor(getDocumentServer().getDescriptorForName(getSes(), "ccmPrjDocDueDate"));
 
                     mainDocument.setDescriptorValueTyped("ccmPrjDocDate", (new java.util.Date()));
                     mainDocument.setDescriptorValueTyped("DocID", mainDocument.getID());
