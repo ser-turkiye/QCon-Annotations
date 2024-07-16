@@ -60,7 +60,7 @@ public class OnCancelProcess extends UnifiedAgent {
 
             IDocument mainDocument = (IDocument) processInstance.getMainInformationObject();
 
-            ITask[] subProcesses = getSubProcesses(mainDocument.getID());
+            ITask[] subProcesses = getSubProcesses(processInstance.getID());
             for (ITask task : subProcesses) {
                 if (task.getStatus() != TaskStatus.CANCELED) {
                     task.setDescriptorValue("Notes", "Process Cancelled by " + currentUser);
@@ -196,11 +196,11 @@ public class OnCancelProcess extends UnifiedAgent {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.ReviewSubProcess).append("'");
         builder.append(" AND WFL_TASK_STATUS IN (2,4,16)");
-        builder.append(" AND ").append(Conf.DescriptorLiterals.MainDocumentID).append(" = '").append(mainDocID).append("'");
+        builder.append(" AND ").append(Conf.DescriptorLiterals.MainTaskReference).append(" = '").append(mainDocID).append("'");
         String whereClause = builder.toString();
         log.info("Where Clause: " + whereClause);
         //IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 2, false);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 100, false);
         //if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
         ITask[] newArr = new ITask[informationObjects.length];
         for(int i=0 ; i < informationObjects.length ; i++){
