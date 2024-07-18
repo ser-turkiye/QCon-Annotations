@@ -52,6 +52,7 @@ public class Conf {
 
         public static final String PrjCardCode = "CCMPRJCARD_CODE";
         public static final String MainTaskReference = "MAINTASKREFERENCE";
+        public static final String Reviewer = "LAYERNAME";
         public static final String ObjectNumberExternal = "OBJECTNUMBER2";
 
     }

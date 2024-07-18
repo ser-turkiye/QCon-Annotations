@@ -67,8 +67,6 @@ public class OnNewTask extends UnifiedAgent {
         }
         return resultSuccess("Agent Finished Succesfully");
     }
-
-
     private IDocument createNewDocumentCopy(String layerName) throws Exception {
         log.info("Copying Original Document for each WB");
         IDocument copyDoc = null;
@@ -145,6 +143,11 @@ public class OnNewTask extends UnifiedAgent {
                 IWorkbasket wb = getBpm().getWorkbasket(reviewer);
                 if (wb == null) throw new Exception("Reviwer with WBID: " + reviewer + "'s workbasket not found");
                 String layerName = wb.getFullName();
+                boolean isExistTaskForReview = this.checkExistSubProcesses(getEventTask().getProcessInstance().getID(),layerName);
+                if(isExistTaskForReview){
+                    log.info("Exist task reviewer (" + layerName + ") for main task : " + getEventTask().getProcessInstance().getID());
+                    continue;
+                }
                 wbList.add(layerName);
                 if (createdLayerNames.containsKey(layerName)) {
                     layerName = reviewer;
@@ -157,7 +160,23 @@ public class OnNewTask extends UnifiedAgent {
             log.info("Exeption Caught..startNewTasks: " + e);
         }
     }
-
+    private boolean checkExistSubProcesses(String mainTaskID, String reviewer) throws Exception {
+        boolean rtrn = false;
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Conf.ClassIDs.ReviewSubProcess).append("'");
+        //builder.append(" AND WFL_TASK_STATUS IN (2,4,16)");
+        builder.append(" AND ").append(Conf.DescriptorLiterals.MainTaskReference).append(" = '").append(mainTaskID).append("'");
+        builder.append(" AND ").append(Conf.DescriptorLiterals.Reviewer).append(" = '").append(reviewer).append("'");
+        String whereClause = builder.toString();
+        log.info("Where Clause: " + whereClause);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 100, false);
+        if(informationObjects.length > 0) return true;
+        ITask[] newArr = new ITask[informationObjects.length];
+        for(int i=0 ; i < informationObjects.length ; i++){
+            newArr[i] = (ITask) informationObjects[i];
+        }
+        return rtrn;
+    }
     private void setDocumentIDOnTask() throws Exception {
         log.info("Setting Document ID on Main Task");
         String docID = mainDocument.getID();
