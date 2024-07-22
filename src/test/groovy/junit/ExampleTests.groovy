@@ -29,24 +29,11 @@ class ExampleTests {
     @Test
     void testForAgentResult() {
 
-        def agent = new OnNewTask();
-        //def agent = new OnSubTaskComplete();
-        //def agent = new OnNewAnnotation();
-        //def agent = new OnNewBulkReview();
-        //def agent = new AnnotationTable();
-        //def agent = new GenerateStamp();
-        //def agent = new OnChangeAnnotation();
-        //def agent = new OnChangeDiscipline();
-        //def agent = new OnChangeProjectDoc();
-        //def agent = new OnChangeProjectCard();
-        //def agent = new OnUpdateEmployee();
-        //def agent = new OnCreateDCCExcel();
-        //def agent = new OnCancelProcess();
-        //def agent = new TestTaskRemove();
+        def agent = new OnNewBulkReview();
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24eb6cd282-fc12-4e41-bd68-73162b860e52182024-05-03T09:05:58.389Z010"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM243ef2d545-9de8-4046-81f1-e948d2550ddd182024-07-22T09:47:10.253Z010"
 
-        def result = (AgentExecutionResult)agent.execute(binding.variables)
+        def result = (AgentExecutionResult) agent.execute(binding.variables)
         System.out.println(result)
 //        assert result.resultCode == 0
 //        assert result.executionMessage.contains("Linux")

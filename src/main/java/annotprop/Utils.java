@@ -304,7 +304,7 @@ public class Utils {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.ProjectWorkspace).append("'");
         String whereClause = builder.toString();
-        System.out.println("Where Clause: " + whereClause);
+        log.info("Where Clause: " + whereClause);
 
         IInformationObject[] list = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , "", 0, false);
         JSONObject rtrn = new JSONObject();

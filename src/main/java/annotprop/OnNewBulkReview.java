@@ -9,9 +9,7 @@ import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class OnNewBulkReview extends UnifiedAgent {
     private Logger log = LogManager.getLogger();
@@ -29,7 +27,6 @@ public class OnNewBulkReview extends UnifiedAgent {
                 log.error("Task is locked.." + getEventTask().getID() + "..restarting agent");
                 return resultRestart("Restarting Agent");
             }
-            IDocumentServer srv = getEventTask().getSession().getDocumentServer();
             IInformationObjectLinks links = getEventTask().getProcessInstance().getLoadedInformationObjectLinks();
             for (ILink link : links.getLinks()) {
                 IInformationObject xdoc = link.getTargetInformationObject();
@@ -38,7 +35,13 @@ public class OnNewBulkReview extends UnifiedAgent {
                 String dpjn = xdoc.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
                 String category = xdoc.getDescriptorValue("ccmPrjDocCategory");
                 if (category != null && category.trim().equalsIgnoreCase("Correspondence")){continue;}
-                this.createNewMainProcess((IDocument) xdoc);
+                boolean isExistMain = checkExistMainProcess((IDocument) xdoc);
+                if(!isExistMain) { ///restart olma durumunda (deadlocked) ilgili dokümanda onceden main review proces baslatılmamışsa
+                    this.createNewMainProcess((IDocument) xdoc);
+                }
+                else{
+                    log.info("Not Stared Process. Exist MainProcess for document : " + disp + " / " + xdoc.getID());
+                }
             }
         } catch (Exception e) {
             log.error("Exception Caught");
@@ -46,6 +49,27 @@ public class OnNewBulkReview extends UnifiedAgent {
             return resultError(e.getMessage());
         }
         return resultSuccess("Agent Finished Succesfully");
+    }
+    private boolean checkExistMainProcess(IDocument mainDocument){
+        ILink[] links2 = getDocumentServer().getReferencingRelationships(getSes(), mainDocument.getID(), false);
+        for (ILink link2 : links2) {
+            IInformationObject xdoc = link2.getSourceInformationObject();
+            String docClassID = xdoc.getClassID();
+            InformationObjectType objType = xdoc.getInformationObjectType();
+            log.info("Check MainProcess... usage object for : " + xdoc.getID() + " /// type : " + objType);
+            if (objType != InformationObjectType.PROCESS_INSTANCE) {
+                continue;
+            }
+            IProcessInstance processInstance = (IProcessInstance) xdoc;
+
+            if (Objects.equals(docClassID, Conf.ClassIDs.MainReviewProcess)) {
+                Date completionDate = processInstance.getFinishedDate();
+                if(completionDate == null) { ///finish olmamışsa
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     private void createNewMainProcess(IDocument mainDocument) throws Exception {
         log.info("Creating New Main Review Process for :" + mainDocument.getID());

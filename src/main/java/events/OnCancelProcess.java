@@ -126,9 +126,12 @@ public class OnCancelProcess extends UnifiedAgent {
             projects = Utils.getProjectWorkspaces(this.helper);
             mailTemplate = null;
 
+            log.info("Getting mail template start");
             for(String prjnmbr : projects.keySet()){
                 IInformationObject prjt = (IInformationObject) projects.get(prjnmbr);
+                log.info("Getting mail template for project : " + prjnmbr);
                 IDocument dtpl = Utils.getTemplateDocument(prjt, Conf.MailTemplates.CancelProcess);
+                log.info("mail template : " + dtpl);
                 if(dtpl == null){continue;}
                 mailTemplate = dtpl;
                 break;
