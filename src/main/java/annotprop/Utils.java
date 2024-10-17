@@ -336,13 +336,17 @@ public class Utils {
     public static IDocument getTemplateDocument(IInformationObject info, String tpltName) throws Exception {
         List<INode> nods = ((IFolder) info).getNodesByName("Templates");
         IDocument rtrn = null;
+        session = info.getSession();
+        server = session.getDocumentServer();
+
         for(INode node : nods){
             IElements elms = node.getElements();
 
             for(int i=0;i<elms.getCount2();i++) {
                 IElement nelement = elms.getItem2(i);
                 String edocID = nelement.getLink();
-                IInformationObject tplt = info.getSession().getDocumentServer().getInformationObjectByID(edocID, info.getSession());
+                IInformationObject tplt = session.getDocumentServer().getInformationObjectByID(edocID, session);
+
                 if(tplt == null){continue;}
 
                 if(!hasDescriptor(tplt, Conf.Descriptors.TemplateName)){continue;}
@@ -355,7 +359,7 @@ public class Utils {
             }
             if(rtrn != null){break;}
         }
-        if(rtrn != null && server != null && session != null) {
+        if(rtrn != null ) {
             rtrn = server.getDocumentCurrentVersion(session, rtrn.getID());
         }
         return rtrn;

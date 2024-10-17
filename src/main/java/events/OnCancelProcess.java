@@ -64,13 +64,13 @@ public class OnCancelProcess extends UnifiedAgent {
             for (ITask task : subProcesses) {
                 if (task.getStatus() != TaskStatus.CANCELED) {
                     task.setDescriptorValue("Notes", "Process Cancelled by " + currentUser);
-                    task.cancel();
-                    task.commit();
+                    //task.cancel();
+                   // task.commit();
                 }
             }
 
-            processInstance.setDescriptorValue("ccmCrrsStatus","Cancelled");
-            processInstance.commit();
+            //processInstance.setDescriptorValue("ccmCrrsStatus","Cancelled");
+            //processInstance.commit();
 
 
             Date tbgn = null, tend = new Date();

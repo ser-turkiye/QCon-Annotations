@@ -29,9 +29,9 @@ class ExampleTests {
     @Test
     void testForAgentResult() {
 
-        def agent = new OnNewBulkReview();
+        def agent = new OnCancelProcess();
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM243ef2d545-9de8-4046-81f1-e948d2550ddd182024-07-22T09:47:10.253Z010"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM246f2cfe32-be97-4ded-aea9-a33a5afee0d3182024-07-25T07:55:24.183Z013"
 
         def result = (AgentExecutionResult) agent.execute(binding.variables)
         System.out.println(result)
