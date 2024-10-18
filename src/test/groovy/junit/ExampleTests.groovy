@@ -31,7 +31,8 @@ class ExampleTests {
 
         def agent = new OnCancelProcess();
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM246f2cfe32-be97-4ded-aea9-a33a5afee0d3182024-07-25T07:55:24.183Z013"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2485b01fe3-209a-4c4f-9cdb-e7ab6c2725a4182024-08-01T11:43:29.914Z016"
+
 
         def result = (AgentExecutionResult) agent.execute(binding.variables)
         System.out.println(result)

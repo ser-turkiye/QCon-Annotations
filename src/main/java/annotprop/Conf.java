@@ -21,6 +21,7 @@ public class Conf {
         public static final String MainTaskID = "MainTaskReference";
         public static final String BulkProcessID = "ProcessID";
         public static final String Recievers = "Receivers";
+        public static final String RecieversNew = "ReceiversNew";
         public static final String LayerName= "LayerName";
         public static final String ReviewerWBID ="ResponsibleWB";
 

@@ -20,7 +20,11 @@ public class OnChangeProjectCard extends UnifiedAgent {
         ISession ses = this.getSes();
         IDocumentServer srv = ses.getDocumentServer();
         IDocument mainDocument = null;
+
         try {
+
+            ses.refreshServerSessionCache();
+
             mainDocument = getEventDocument();
             log.info("----OnChangeProjectCard Started ---for IDocument ID:--" + mainDocument.getID());
 

@@ -8,6 +8,7 @@ import com.ser.foldermanager.IFolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,6 +23,17 @@ public class ProcessHelper {
         this.documentServer = session.getDocumentServer();
     }
 
+    public List<Object> mergeLists(List<Object> list1,List<Object> list2){
+
+        List<Object> result = new ArrayList<>(list1);
+
+        for(Object e: list2){
+            if(!result.contains(e))
+                result.add(e);
+        }
+
+        return result;
+    }
 
     public IProcessInstance buildNewProcessInstanceForID(String id){
         try{
