@@ -51,11 +51,21 @@ public class OnNewTask extends UnifiedAgent {
 
             this.setDocumentIDOnTask();
             //Get the Task Reviewers
-            List<String> reviewers = getEventTask().getDescriptorValues(Conf.Descriptors.Recievers, String.class);
-            if (reviewers == null) return resultError("No Receivers found");
-            if (reviewers.size() < 1) return resultError("No Receivers found");
+            List<String> reviewersNew = getEventTask().getDescriptorValues(Conf.Descriptors.RecieversNew, String.class);
+            if (reviewersNew == null) return resultError("No Receivers found");
+            if (reviewersNew.isEmpty()) return resultError("No Receivers found");
             try {
-                this.startNewTasks(reviewers);
+
+                List<Object> reviewers1 = getEventTask().getDescriptorValues(Conf.Descriptors.RecieversNew, Object.class) ;
+                List<Object> reviewers2 = getEventTask().getDescriptorValues(Conf.Descriptors.Recievers, Object.class) ;
+                List<Object> reviewers = helper.mergeLists( reviewers1 , reviewers2 );
+
+                getEventTask().setDescriptorValues(Conf.Descriptors.RecieversNew, null );
+                getEventTask().setDescriptorValues(Conf.Descriptors.Recievers, reviewers );
+                getEventTask().commit();
+
+                if (!reviewers.toString().equals(reviewers1.toString())) this.startNewTasks(reviewersNew);
+
             }catch (Exception e){
                 log.error("Restarting OnNewTask agent");
                 return resultRestart("Restarting OnNewTask Agent");
@@ -65,7 +75,8 @@ public class OnNewTask extends UnifiedAgent {
             log.error(e.getMessage());
             return resultError(e.getMessage());
         }
-        return resultSuccess("Agent Finished Succesfully");
+
+            return resultSuccess("Agent Finished Succesfully");
     }
     private IDocument createNewDocumentCopy(String layerName) throws Exception {
         log.info("Copying Original Document for each WB");
