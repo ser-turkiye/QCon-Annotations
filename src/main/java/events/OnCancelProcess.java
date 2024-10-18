@@ -49,6 +49,7 @@ public class OnCancelProcess extends UnifiedAgent {
             ses = getSes();
             srv = ses.getDocumentServer();
             bpm = getBpm();
+
             this.helper = new ProcessHelper(getSes());
 
             ITask mainTask = getEventTask();
@@ -137,8 +138,7 @@ public class OnCancelProcess extends UnifiedAgent {
                 break;
             }
             log.info("Mail template :" + (mailTemplate != null ? mailTemplate.getDisplayName() : "---"));
-            //if(mailTemplate == null){throw new Exception("Mail template not found.");}
-            //IDocument mtpl = Utils.getTemplateDocument(prjn, mtpn, helper);
+
             if(mailTemplate == null){
                 log.info("Template-Document [ " + mtpn + " ] not found.");
                 //throw new Exception("Template-Document [ " + mtpn + " ] not found.");
