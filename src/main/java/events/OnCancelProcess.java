@@ -24,6 +24,8 @@ import ser.bn.se.demosystems.documents.CounterHelper;
 
 import javax.swing.text.html.HTMLDocument;
 
+import static annotprop.Utils.loadTableRows;
+
 public class OnCancelProcess extends UnifiedAgent {
 
     private Logger log = LogManager.getLogger();
@@ -34,6 +36,7 @@ public class OnCancelProcess extends UnifiedAgent {
     public Utils utils;
     IDocument mailTemplate = null;
     JSONObject projects = new JSONObject();
+    List<String> docs = new ArrayList<>();
 
     @Override
     protected Object execute() {
@@ -65,13 +68,13 @@ public class OnCancelProcess extends UnifiedAgent {
             for (ITask task : subProcesses) {
                 if (task.getStatus() != TaskStatus.CANCELED) {
                     task.setDescriptorValue("Notes", "Process Cancelled by " + currentUser);
-                    //task.cancel();
-                   // task.commit();
+                    task.cancel();
+                    task.commit();
                 }
             }
 
-            //processInstance.setDescriptorValue("ccmCrrsStatus","Cancelled");
-            //processInstance.commit();
+            processInstance.setDescriptorValue("ccmCrrsStatus","Cancelled");
+            processInstance.commit();
 
 
             Date tbgn = null, tend = new Date();
@@ -110,19 +113,24 @@ public class OnCancelProcess extends UnifiedAgent {
             ITask prevTask = this.getEventTask().getProcessInstance().findTaskByNumericID(this.getEventTask().getPreviousTaskNumericID());
             log.info("Previev task name :" + (prevTask != null ? prevTask.getName() : "---"));
 
+            int cnt = 0;
+            cnt++;
             String mtpn = "PROCESS_CANCEL_MAIL";
             JSONObject dbks = new JSONObject();
             dbks.put("DoxisLink", Conf.CancelProcess.WebBase + helper.getTaskURL(processInstance.getID()));
             dbks.put("Title", mainDocument.getDisplayName());
             //dbks.put("Task", mainTask.getName());
-            dbks.put("Task", (prevTask != null ? prevTask.getName() : mainTask.getName()));
+            dbks.put("Task" + cnt, (prevTask != null ? prevTask.getName() : mainTask.getName()));
+            dbks.put("ProcessTitle" + cnt, (processInstance != null ? processInstance.getDisplayName() : ""));
+            dbks.put("ProjectNo" + cnt, (prjn != null  ? prjn : ""));
+            dbks.put("DocNo" + cnt, (mdno != null  ? mdno : ""));
+            dbks.put("RevNo" + cnt, (mdrn != null  ? mdrn : ""));
+            dbks.put("DocName" + cnt, (mdnm != null  ? mdnm : ""));
+            dbks.put("ReceivedOn" + cnt, (rcvo != null ? rcvo : ""));
+            dbks.put("CancelledOn" + cnt, (rcvo != null ? rcvo : ""));
 
-            dbks.put("ProcessTitle", (processInstance != null ? processInstance.getDisplayName() : ""));
-            dbks.put("ProjectNo", (prjn != null  ? prjn : ""));
-            dbks.put("DocNo", (mdno != null  ? mdno : ""));
-            dbks.put("RevNo", (mdrn != null  ? mdrn : ""));
-            dbks.put("DocName", (mdnm != null  ? mdnm : ""));
-            dbks.put("ReceivedOn", (rcvo != null ? rcvo : ""));
+
+            docs.add(mainDocument.getDescriptorValue(Conf.Descriptors.DocNumber));
 
             projects = Utils.getProjectWorkspaces(this.helper);
             mailTemplate = null;
@@ -145,9 +153,13 @@ public class OnCancelProcess extends UnifiedAgent {
             }else {
                 String tplMailPath = Utils.exportDocument(mailTemplate, Conf.CancelProcess.MainPath, mtpn + "[" + uniqueId + "]");
                 log.info("Mail template export path:" + tplMailPath);
-                String mailExcelPath = Utils.saveDocReviewExcel(tplMailPath, Conf.CancelProcessSheetIndex.Mail,
+                //String mailExcelPath = Utils.saveDocReviewExcel(tplMailPath, Conf.CancelProcessSheetIndex.Mail,Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].xlsx", dbks);
+
+                loadTableRows(tplMailPath, 0, "Task", 0, docs.size());
+                String mailExcelPath = Utils.saveToExcel(tplMailPath, 0,
                         Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].xlsx", dbks
                 );
+
                 log.info("Mail mailExcelPath :" + mailExcelPath);
                 String mailHtmlPath = Utils.convertExcelToHtml(mailExcelPath, Conf.CancelProcess.MainPath + "/" + mtpn + "[" + uniqueId + "].html");
                 log.info("Mail mailHtmlPath :" + mailHtmlPath);

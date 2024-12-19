@@ -28,6 +28,12 @@ public class OnChangeProjectCard extends UnifiedAgent {
             mainDocument = getEventDocument();
             log.info("----OnChangeProjectCard Started ---for IDocument ID:--" + mainDocument.getID());
 
+
+            String isAutoComplete = mainDocument.getDescriptorValue("ObjectState", String.class);
+            String isAutoComplete1 = mainDocument.getDescriptorValue("ObjectState");
+            log.info("----OnChangeProjectCard --- AutoComplete value:" + isAutoComplete);
+            log.info("----OnChangeProjectCard --- AutoComplete1 value:" + isAutoComplete1);
+
             updatePrjCardCrspDocTypes2GVList("CCM_CORRESPONDENCE_DOC_TYPE", mainDocument.getDescriptorValue("ccmPRJCard_code"), mainDocument);
             log.info("----OnChangeProjectCard Updated Project Card GVList ---for (ID):" + mainDocument.getID());
 

@@ -29,6 +29,10 @@ public class OnSubTaskComplete extends UnifiedAgent {
 
             if(mainDocID == null) return resultError("Main Document ID is NULL");
 
+            // Updateing ENG_COPY document
+            getEventTask().getProcessInstance().getMainInformationObject().setDescriptorValue("ccmApproved","1");
+            getEventTask().getProcessInstance().getMainInformationObject().commit();
+
             mainTask = getMainTask(mainDocID);
             if(mainTask == null) return resultError("Main TASK is NULL");
 
@@ -97,10 +101,10 @@ public class OnSubTaskComplete extends UnifiedAgent {
         String whereClause = builder.toString();
         log.info("Where Clause: " + whereClause);
         //IInformationObject[] informationObjects = helper.createQuery(new String[]{"BPM"} , whereClause , 2);
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "", 2, false);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.BPM} , whereClause , "CreationDate", 0, false);
         if(informationObjects.length < 1) throw new Exception("No Hits found for query: " + whereClause);
-        if(informationObjects.length > 1) throw new Exception("Multiple hits found for query: " + whereClause);
-        return (ITask) informationObjects[0];
+        //if(informationObjects.length > 1) throw new Exception("Multiple hits found for query: " + whereClause);
+        return (ITask) informationObjects[ informationObjects.length -1];
     }
 
     private IDocument getMainDocument() throws Exception {
